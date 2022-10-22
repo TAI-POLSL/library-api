@@ -25,7 +25,7 @@ namespace LibraryAPI.Models.Configurations
             modelBuilder.ToTable("Users");
             modelBuilder.Property(u => u.Id).HasColumnName("Id");
             modelBuilder.Property(u => u.Username).HasColumnName("Username");
-            modelBuilder.Property(u => u.PersonId).HasColumnName("UserCredentialId");
+            modelBuilder.Property(u => u.UserCredentialId).HasColumnName("UserCredentialId");
             modelBuilder.Property(u => u.PersonId).HasColumnName("PersonId");
             modelBuilder.Property(u => u.IsLocked).HasColumnName("IsLocked");
             modelBuilder.Property(u => u.IsConfirmed).HasColumnName("IsConfirmed");

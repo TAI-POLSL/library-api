@@ -9,6 +9,7 @@
         public bool IsLocked { get; set; }
         public bool IsConfirmed { get; set; }
         public virtual Person Person { get; set; }
-        public virtual UserCredential UserCredential { get; set; }
+        public virtual ICollection<UserCredential> UserCredentials { get; set; }
+        public virtual ICollection<UserBookRented> UserBookRented { get; set; }
     }
 }

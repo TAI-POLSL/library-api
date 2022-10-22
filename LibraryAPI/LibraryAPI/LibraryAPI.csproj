@@ -22,7 +22,6 @@
     <Folder Include="Functions\" />
     <Folder Include="Middlewares\" />
     <Folder Include="Mappers\" />
-    <Folder Include="Migrations\" />
     <Folder Include="Models\Dto\" />
     <Folder Include="Services\" />
     <Folder Include="Interfaces\" />
