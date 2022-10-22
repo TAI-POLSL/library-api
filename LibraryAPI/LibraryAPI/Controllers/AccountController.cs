@@ -1,5 +1,6 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Authorization;
+using LibraryAPI.Interfaces;
 
 namespace LibraryAPI.Controllers
 {
@@ -7,34 +8,40 @@ namespace LibraryAPI.Controllers
     [Route("/api/1.0.0/account/")]
     public class AccountController : ControllerBase
     {
+        private readonly IAccountService _service;
 
-        public AccountController()
+        public AccountController(IAccountService service)
         {
+            _service = service;
         }
 
 
         [HttpPost]
         public ActionResult Register()
         {
-            return Ok();
+            var obj = _service.Register();
+            return Ok(obj);
         }
 
-        [HttpPatch]
-        public ActionResult Lock()
+        [HttpPatch("{userId}")]
+        public ActionResult Lock(Guid userId)
         {
-            return Ok();
+            var obj = _service.Lock(userId);
+            return Ok(obj);
         }
 
         [HttpPatch("password")]
         public ActionResult ChangePassword()
         {
-            return Ok();
+            var obj = _service.ChangePassword();
+            return Ok(obj);
         }
 
         [HttpDelete]
         public ActionResult Close()
         {
-            return Ok();
+            var obj = _service.Close();
+            return Ok(obj);
         }
     }
 }

@@ -1,5 +1,6 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Authorization;
+using LibraryAPI.Interfaces;
 
 namespace LibraryAPI.Controllers
 {
@@ -7,44 +8,53 @@ namespace LibraryAPI.Controllers
     [Route("/api/1.0.0/library/manage/")]
     public class LibraryBooksController : ControllerBase
     {
-        public LibraryBooksController()
+        private readonly ILibraryBooksService _service;
+
+        public LibraryBooksController(ILibraryBooksService service)
         {
+            _service = service;
         }
 
         [HttpGet("books")]
         public ActionResult Get()
         {
-            return Ok();
+            var obj = _service.Get();
+            return Ok(obj);
         }
 
         [HttpGet("book/{id}")]
         public ActionResult GetById([FromRoute] int id)
         {
-            return Ok(id);
+            var obj = _service.GetById(id);
+            return Ok(obj);
         }
 
         [HttpPost("book")]
         public ActionResult Add()
         {
-            return Ok();
+            var obj = _service.Add();
+            return Ok(obj);
         }
 
         [HttpPut("book/{id}")]
         public ActionResult Update([FromRoute] int id)
         {
-            return Ok(id);
+            var obj = _service.Update(id);
+            return Ok(obj);
         }
 
         [HttpPatch("book/{id}")]
         public ActionResult UpdateTotalQuantity([FromRoute] int id)
         {
-            return Ok(id);
+            var obj = _service.UpdateTotalQuantity(id);
+            return Ok(obj);
         }
 
         [HttpDelete("book/{id}")]
         public ActionResult Remove([FromRoute] int id)
         {
-            return Ok(id);
+            var obj = _service.Remove(id);
+            return Ok(obj);
         }
     }
 }

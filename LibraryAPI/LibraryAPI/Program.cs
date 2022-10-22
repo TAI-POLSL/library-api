@@ -11,8 +11,10 @@ var DbConnectionString = MyConfig.GetValue<string>("ConnectionStrings:DefaultCon
 
 builder.Services.AddControllers();
 
-
+builder.Services.AddScoped<IAccountService, AccountService>();
 builder.Services.AddScoped<IAuthService, AuthService>();
+builder.Services.AddScoped<ILibraryBooksRentalService, LibraryBooksRentalService>();
+builder.Services.AddScoped<ILibraryBooksService, LibraryBooksService>();
 
 // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
 builder.Services.AddEndpointsApiExplorer();
