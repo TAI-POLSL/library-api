@@ -23,8 +23,6 @@
     <Folder Include="Middlewares\" />
     <Folder Include="Mappers\" />
     <Folder Include="Models\Dto\" />
-    <Folder Include="Services\" />
-    <Folder Include="Interfaces\" />
   </ItemGroup>
 
 </Project>

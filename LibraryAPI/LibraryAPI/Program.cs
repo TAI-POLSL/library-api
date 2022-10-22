@@ -1,4 +1,6 @@
+using LibraryAPI.Interfaces;
 using LibraryAPI.Models;
+using LibraryAPI.Services;
 using Microsoft.EntityFrameworkCore;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -8,6 +10,10 @@ var DbConnectionString = MyConfig.GetValue<string>("ConnectionStrings:DefaultCon
 // Add services to the container.
 
 builder.Services.AddControllers();
+
+
+builder.Services.AddScoped<IAuthService, AuthService>();
+
 // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
