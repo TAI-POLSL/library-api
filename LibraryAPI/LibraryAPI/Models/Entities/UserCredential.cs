@@ -1,0 +1,12 @@
+﻿namespace LibraryAPI.Models.Entities
+{
+    public class UserCredential
+    {
+        public int Id { get; set; }
+        public string Password { get; set; }
+        public string IP { get; set; }
+        public DateTime? ExpiredDate { get; set; }
+        public DateTime CreatedDate { get; set; }
+        public virtual User User { get; set; }
+    }
+}
