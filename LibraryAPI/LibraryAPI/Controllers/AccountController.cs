@@ -1,6 +1,7 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Authorization;
 using LibraryAPI.Interfaces;
+using LibraryAPI.Models.Dto;
 
 namespace LibraryAPI.Controllers
 {
@@ -17,9 +18,10 @@ namespace LibraryAPI.Controllers
 
 
         [HttpPost]
-        public ActionResult Register()
+        public async Task<ActionResult> Register([FromBody] RegisterDto dto)
         {
-            var obj = _service.Register();
+            
+            var obj = await _service.Register(dto);
             return Ok(obj);
         }
 
@@ -31,16 +33,16 @@ namespace LibraryAPI.Controllers
         }
 
         [HttpPatch("password")]
-        public ActionResult ChangePassword()
+        public ActionResult ChangePassword([FromBody] ChangePasswordDto dto)
         {
-            var obj = _service.ChangePassword();
+            var obj = _service.ChangePassword(dto);
             return Ok(obj);
         }
 
-        [HttpDelete]
-        public ActionResult Close()
+        [HttpDelete("{userId}")]
+        public ActionResult Close(Guid userId)
         {
-            var obj = _service.Close();
+            var obj = _service.Close(userId);
             return Ok(obj);
         }
     }

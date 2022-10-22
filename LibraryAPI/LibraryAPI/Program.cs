@@ -1,15 +1,25 @@
 using LibraryAPI.Interfaces;
 using LibraryAPI.Models;
+using LibraryAPI.Models.Entities;
 using LibraryAPI.Services;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 
 var builder = WebApplication.CreateBuilder(args);
 var MyConfig = new ConfigurationBuilder().AddJsonFile("appsettings.json").Build();
 var DbConnectionString = MyConfig.GetValue<string>("ConnectionStrings:DefaultConnection");
 
+
+// Header Context
+
+builder.Services.AddScoped<IHeaderContextService, HeaderContextService>();
+builder.Services.AddHttpContextAccessor();
+
 // Add services to the container.
 
 builder.Services.AddControllers();
+
+builder.Services.AddScoped<IPasswordHasher<User>, PasswordHasher<User>>();
 
 builder.Services.AddScoped<IAccountService, AccountService>();
 builder.Services.AddScoped<IAuthService, AuthService>();

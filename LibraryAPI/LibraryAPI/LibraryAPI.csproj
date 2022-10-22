@@ -22,7 +22,6 @@
     <Folder Include="Functions\" />
     <Folder Include="Middlewares\" />
     <Folder Include="Mappers\" />
-    <Folder Include="Models\Dto\" />
   </ItemGroup>
 
 </Project>

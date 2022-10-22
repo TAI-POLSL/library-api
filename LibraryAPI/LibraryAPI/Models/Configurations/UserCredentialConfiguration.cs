@@ -14,7 +14,6 @@ namespace LibraryAPI.Models.Configurations
             modelBuilder.Property(u => u.UserId).IsRequired();
 
             modelBuilder.Property(u => u.Password).IsRequired();
-            modelBuilder.Property(u => u.Password).HasMaxLength(32).IsRequired();
             modelBuilder.Property(u => u.ExpiredDate).IsRequired(false);
             modelBuilder.Property(u => u.ExpiredDate).HasDefaultValue<DateTime?>(null);
             modelBuilder.Property(u => u.IP).HasMaxLength(15).IsRequired();

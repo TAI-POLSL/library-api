@@ -20,7 +20,6 @@ namespace LibraryAPI.Models.Configurations
 
             modelBuilder.HasIndex(p => p.Username).IsUnique(true);
             modelBuilder.HasIndex(p => p.PersonId).IsUnique(true);
-            modelBuilder.HasIndex(p => p.UserCredentialId).IsUnique(true);
 
             modelBuilder.ToTable("Users");
             modelBuilder.Property(u => u.Id).HasColumnName("Id");

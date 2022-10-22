@@ -7,7 +7,7 @@
         public Guid UserId { get; set; }
         public string IP { get; set; }
         public DateTime? ExpiredDate { get; set; }
-        public DateTime CreatedDate { get; set; }
-        public virtual User User { get; set; }
+        public DateTime CreatedDate { get; set; } = DateTime.UtcNow;
+        public virtual User User { get; set; } = new User();
     }
 }
