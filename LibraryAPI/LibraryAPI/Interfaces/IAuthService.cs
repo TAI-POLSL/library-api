@@ -4,7 +4,7 @@ namespace LibraryAPI.Interfaces
 {
     public interface IAuthService
     {
-        public object Login(LoginDto dto);
+        public Task<object> LoginAsync(LoginDto dto);
         public Task<object> Logout();
     }
 }

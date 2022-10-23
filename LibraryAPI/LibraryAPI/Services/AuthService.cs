@@ -3,8 +3,11 @@ using LibraryAPI.Interfaces;
 using LibraryAPI.Models;
 using LibraryAPI.Models.Dto;
 using LibraryAPI.Models.Entities;
+using Microsoft.AspNetCore.Authentication;
+using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
+using System.Security.Claims;
 
 namespace LibraryAPI.Services
 {
@@ -15,27 +18,41 @@ namespace LibraryAPI.Services
         private readonly IConfiguration _configuration;
         private readonly IPasswordHasher<User> _passwordHasher;
         private readonly IAuditService _auditService;
+        protected readonly IHttpContextAccessor _httpContextAccessor;
+        private readonly IHeaderContextService _headerContextService;
 
         public AuthService(
             ILogger<AuthService> logger,
             AppDbContext context,
             IConfiguration configuration,
             IPasswordHasher<User> passwordHasher,
-            IAuditService auditService)
+            IAuditService auditService,
+            IHttpContextAccessor httpContextAccessor,
+            IHeaderContextService headerContextService
+            )
         {
             _logger = logger;
             _context = context;
             _configuration = configuration;
             _passwordHasher = passwordHasher;
             _auditService = auditService;
+            _httpContextAccessor = httpContextAccessor;
+            _headerContextService = headerContextService;
         }
 
 
-        public object Login(LoginDto dto)
+        public async Task<object> LoginAsync(LoginDto dto)
         {
+            var ss = _httpContextAccessor.HttpContext?.Request.Cookies["SESSION"];
+
+            if (ss != null)
+            {
+                throw new AuthException("Login => session cookie exists");
+            }
+
             var user = _context.Users
-              .AsNoTracking()
-              .FirstOrDefault(x => x.Username == dto.Username);
+                .AsNoTracking()
+                .FirstOrDefault(x => x.Username == dto.Username);
 
             if (user is null)
             {
@@ -81,20 +98,72 @@ namespace LibraryAPI.Services
                 throw new AuthException("Login => username or password invalid");
             }
 
-            // Auth correct
+            // Create SESSION in db
 
-            // Todo ...
+            var session = new Session()
+            {
+                UserId = user.Id,
+                IpAddress = _headerContextService.RemoteIpAddress(),
+            };
+
+            _context.Sessions.Add(session);
+            _context.SaveChanges();
+
+            // Generate SESSION cookie with claims
+
+            var claims = new List<Claim>
+            {
+                new Claim("SessionID", session.Id.ToString()),
+                new Claim(ClaimTypes.NameIdentifier, user.Id.ToString()),
+                new Claim(ClaimTypes.Name, user.Username),
+                new Claim(ClaimTypes.Role, user.Role.ToString()),
+            };
+
+            await _httpContextAccessor.HttpContext!.SignInAsync(
+                CookieAuthenticationDefaults.AuthenticationScheme,
+                new ClaimsPrincipal(new ClaimsIdentity(claims, CookieAuthenticationDefaults.AuthenticationScheme)),
+                new AuthenticationProperties
+                {
+                    AllowRefresh = true,
+                    ExpiresUtc = DateTimeOffset.UtcNow.AddDays(15),
+                    IsPersistent = true,
+                    IssuedUtc = DateTimeOffset.UtcNow,
+                });
 
             _auditService.SecurityAuditUserLoginAttemptSuccess(user.Id, user.Username);
 
             return user.Id;
         }
 
-        public Task<object> Logout()
+        public async Task<object> Logout()
         {
-            throw new NotImplementedException();
-        }
+            if (_httpContextAccessor.HttpContext == null) {
+                await _httpContextAccessor.HttpContext!.SignOutAsync(CookieAuthenticationDefaults.AuthenticationScheme);
+                return "";
+            }
 
- 
+            var sessionId = _httpContextAccessor.HttpContext.User.Claims.FirstOrDefault(x => x.Type == "SessionID")?.Value!;
+
+            if (sessionId == null) {
+                await _httpContextAccessor.HttpContext!.SignOutAsync(CookieAuthenticationDefaults.AuthenticationScheme);
+                return "";
+            }
+
+            var userId = _httpContextAccessor.HttpContext.User.Claims.FirstOrDefault(x => x.Type == ClaimTypes.NameIdentifier)?.Value!;
+            var username = _httpContextAccessor.HttpContext.User.Claims.FirstOrDefault(x => x.Type == ClaimTypes.Name)?.Value!;
+
+            var guidSessionId = new Guid(sessionId);
+            var guidUserGuidId = new Guid(userId);
+
+            var session = _context.Sessions.Where(x => x.Id == guidSessionId).First();
+            _context.Sessions.Remove(session);
+
+            _auditService.SecurityAuditUserLogoutAttemptSuccess(guidUserGuidId, username);
+
+            await _httpContextAccessor.HttpContext!.SignOutAsync(CookieAuthenticationDefaults.AuthenticationScheme);
+            _context.SaveChanges();
+
+            return "";
+        }
     }
 }

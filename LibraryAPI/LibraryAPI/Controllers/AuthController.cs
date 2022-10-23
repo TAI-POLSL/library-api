@@ -2,6 +2,7 @@
 using Microsoft.AspNetCore.Authorization;
 using LibraryAPI.Interfaces;
 using LibraryAPI.Models.Dto;
+using LibraryAPI.Enums;
 
 namespace LibraryAPI.Controllers
 {
@@ -23,17 +24,18 @@ namespace LibraryAPI.Controllers
 
         [AllowAnonymous]
         [HttpPost("login")]
-        public ActionResult Login([FromBody] LoginDto dto)
+        public async Task<ActionResult> Login([FromBody] LoginDto dto)
         {
-            object code = _service.Login(dto);
+            object code = await _service.LoginAsync(dto);
             return Ok(code);
         }
 
         [HttpDelete("logout")]
+        [Authorize(Roles = "ADMIN, EMPLOYEE, CLIENT")]
         public async Task<ActionResult> Logout()
         {
-            object code = await _service.Logout();
-            return Ok(code);
+            await _service.Logout();
+            return NoContent();
         }
     }
 }

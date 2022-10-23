@@ -11,6 +11,7 @@ namespace LibraryAPI.Models
         public DbSet<BookInLibrary> BooksInLibrary { get; set; }
         public DbSet<Person> Persons { get; set; }
         public DbSet<SecurityAudit> SecurityAudit { get; set; }
+        public DbSet<Session> Sessions { get; set; }
         public DbSet<User> Users { get; set; }
         public DbSet<UserBookRented> UsersBooksRented { get; set; }
         public DbSet<UserCredential> UserCredentials { get; set; }
@@ -24,6 +25,7 @@ namespace LibraryAPI.Models
             modelBuilder.ApplyConfiguration(new BookConfiguration());
             modelBuilder.ApplyConfiguration(new BookInLibraryConfiguration());
             modelBuilder.ApplyConfiguration(new SecurityAuditConfiguration());
+            modelBuilder.ApplyConfiguration(new SessionConfiguration());
             modelBuilder.ApplyConfiguration(new PersonConfiguration());
             modelBuilder.ApplyConfiguration(new UserBookRentedConfiguration());
             modelBuilder.ApplyConfiguration(new UserConfiguration());
