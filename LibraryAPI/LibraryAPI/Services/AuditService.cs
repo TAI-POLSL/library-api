@@ -27,7 +27,7 @@ namespace LibraryAPI.Services
         {
             var query = _context.SecurityAudit
                 .AsNoTracking()
-                .Include(x => x.UserId)
+                .Include(x => x.User)
                 .Select(x => new {
                     x.Id,
                     x.UserId,
@@ -44,7 +44,7 @@ namespace LibraryAPI.Services
         {
             var query = _context.SecurityAudit
                 .AsNoTracking()
-                .Include(x => x.UserId)
+                .Include(x => x.User)
                 .Where(x => x.UserId == userId)
                 .Select(x => new { 
                     x.Id,
@@ -63,7 +63,7 @@ namespace LibraryAPI.Services
         {
             var query = _context.SecurityAudit
                 .AsNoTracking()
-                .Include(x => x.UserId)
+                .Include(x => x.User)
                 .Where(x => x.UserId == userId && (
                     x.SecurityOperation == Enums.SecurityOperation.LOGIN_ATTEMPT_SUCCESS
                     || x.SecurityOperation == Enums.SecurityOperation.LOGIN_ATTEMPT_FAILS
