@@ -229,6 +229,7 @@ namespace LibraryAPI.Services
                 Username = dto.Username,
                 IsConfirmed = true,
                 IsEnabled = true,
+                Role = dto.Roles,
                 Person = new Person()
                 {
                     FirstName = dto.FirstName,

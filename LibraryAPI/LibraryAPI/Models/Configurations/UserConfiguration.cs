@@ -15,6 +15,7 @@ namespace LibraryAPI.Models.Configurations
             modelBuilder.Property(u => u.CurrUserCredentialId).IsRequired();
 
             modelBuilder.Property(u => u.Username).HasMaxLength(32).IsRequired();
+            modelBuilder.Property(u => u.Role).IsRequired();
             modelBuilder.Property(u => u.IsLocked).HasDefaultValue<bool>(false).IsRequired();
             modelBuilder.Property(u => u.IsConfirmed).HasDefaultValue<bool>(false).IsRequired();
             modelBuilder.Property(u => u.IsEnabled).HasDefaultValue<bool>(true).IsRequired();
@@ -27,6 +28,7 @@ namespace LibraryAPI.Models.Configurations
             modelBuilder.Property(u => u.Username).HasColumnName("Username");
             modelBuilder.Property(u => u.CurrUserCredentialId).HasColumnName("CurrUserCredentialId");
             modelBuilder.Property(u => u.PersonId).HasColumnName("PersonId");
+            modelBuilder.Property(u => u.Role).HasColumnName("Role");
             modelBuilder.Property(u => u.IsLocked).HasColumnName("IsLocked");
             modelBuilder.Property(u => u.IsConfirmed).HasColumnName("IsConfirmed");
             modelBuilder.Property(u => u.IsEnabled).HasColumnName("IsEnabled");

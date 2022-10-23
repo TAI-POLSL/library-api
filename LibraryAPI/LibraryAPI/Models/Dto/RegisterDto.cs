@@ -15,6 +15,7 @@ namespace LibraryAPI.Models.Dto
         public string FirstName { get; set; }
         public string LastName { get; set; }
         public Gender Gender { get; set; }
+        public UserRoles Roles { get; set; }
 
         [MaxLength(100), EmailAddress]
         public string Email { get; set; }
