@@ -22,6 +22,7 @@ builder.Services.AddControllers();
 builder.Services.AddScoped<IPasswordHasher<User>, PasswordHasher<User>>();
 
 builder.Services.AddScoped<IAccountService, AccountService>();
+builder.Services.AddScoped<IAuditService, AuditService>();
 builder.Services.AddScoped<IAuthService, AuthService>();
 builder.Services.AddScoped<ILibraryBooksRentalService, LibraryBooksRentalService>();
 builder.Services.AddScoped<ILibraryBooksService, LibraryBooksService>();

@@ -12,22 +12,25 @@ namespace LibraryAPI.Models.Configurations
             modelBuilder.Property(u => u.Id).HasDefaultValueSql("gen_random_uuid()").IsRequired();
 
             modelBuilder.Property(u => u.PersonId).IsRequired();
-            modelBuilder.Property(u => u.UserCredentialId).IsRequired();
+            modelBuilder.Property(u => u.CurrUserCredentialId).IsRequired();
 
             modelBuilder.Property(u => u.Username).HasMaxLength(32).IsRequired();
             modelBuilder.Property(u => u.IsLocked).HasDefaultValue<bool>(false).IsRequired();
             modelBuilder.Property(u => u.IsConfirmed).HasDefaultValue<bool>(false).IsRequired();
-
+            modelBuilder.Property(u => u.IsEnabled).HasDefaultValue<bool>(true).IsRequired();
+            
             modelBuilder.HasIndex(p => p.Username).IsUnique(true);
             modelBuilder.HasIndex(p => p.PersonId).IsUnique(true);
 
             modelBuilder.ToTable("Users");
             modelBuilder.Property(u => u.Id).HasColumnName("Id");
             modelBuilder.Property(u => u.Username).HasColumnName("Username");
-            modelBuilder.Property(u => u.UserCredentialId).HasColumnName("UserCredentialId");
+            modelBuilder.Property(u => u.CurrUserCredentialId).HasColumnName("CurrUserCredentialId");
             modelBuilder.Property(u => u.PersonId).HasColumnName("PersonId");
             modelBuilder.Property(u => u.IsLocked).HasColumnName("IsLocked");
             modelBuilder.Property(u => u.IsConfirmed).HasColumnName("IsConfirmed");
+            modelBuilder.Property(u => u.IsEnabled).HasColumnName("IsEnabled");
+
         }
     }
 }

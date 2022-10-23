@@ -1,6 +1,7 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Authorization;
 using LibraryAPI.Interfaces;
+using LibraryAPI.Models.Dto;
 
 namespace LibraryAPI.Controllers
 {
@@ -22,16 +23,16 @@ namespace LibraryAPI.Controllers
 
         [AllowAnonymous]
         [HttpPost("login")]
-        public ActionResult Login()
+        public ActionResult Login([FromBody] LoginDto dto)
         {
-            string code = _service.Login();
+            object code = _service.Login(dto);
             return Ok(code);
         }
 
         [HttpDelete("logout")]
         public async Task<ActionResult> Logout()
         {
-            string code = await _service.Logout();
+            object code = await _service.Logout();
             return Ok(code);
         }
     }

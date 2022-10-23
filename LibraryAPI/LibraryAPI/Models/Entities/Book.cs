@@ -8,7 +8,7 @@
         public string Author => $"{AuthorFirstName} {AuthorLastName}";
         public string Title { get; set; }
         public string Description { get; set; }
-        public virtual BookInLibrary BookInLibrary { get; set; }
-        public virtual ICollection<UserBookRented> UserBookRented { get; set; }
+        public virtual BookInLibrary BookInLibrary { get; set; } = new BookInLibrary();
+        public virtual ICollection<UserBookRented> UserBookRented { get; set; } = new HashSet<UserBookRented>();
     }
 }

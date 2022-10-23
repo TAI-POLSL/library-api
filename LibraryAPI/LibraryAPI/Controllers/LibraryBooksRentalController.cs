@@ -1,6 +1,7 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Authorization;
 using LibraryAPI.Interfaces;
+using LibraryAPI.Models.Dto;
 
 namespace LibraryAPI.Controllers
 {
@@ -22,24 +23,31 @@ namespace LibraryAPI.Controllers
             return Ok(obj);
         }
 
-        [HttpGet("rental/{id}")]
+        [HttpGet("rental/{id}/details")]
         public ActionResult GetById([FromRoute] int id)
         {
-            var obj = _service.GetById(id);
+            var obj = _service.Get(id);
+            return Ok(obj);
+        }
+
+        [HttpGet("rentals/user/{userId}")]
+        public ActionResult GetByUser([FromRoute] Guid userId)
+        {
+            var obj = _service.Get(null, userId);
             return Ok(obj);
         }
 
         [HttpPost("rental")]
-        public ActionResult Add()
+        public ActionResult Add([FromBody] BookReservationDto dto)
         {
-            var obj = _service.Add();
+            var obj = _service.Add(dto);
             return Ok(obj);
         }
 
-        [HttpPut("rental/{id}")]
-        public ActionResult Update([FromRoute] int id)
+        [HttpPut("rental/{id}/cancel")]
+        public ActionResult Cancel([FromRoute] int id)
         {
-            var obj = _service.Update(id);
+            var obj = _service.Cancel(id);
             return Ok(obj);
         }
 

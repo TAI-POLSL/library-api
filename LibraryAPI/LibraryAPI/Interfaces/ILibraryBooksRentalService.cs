@@ -1,11 +1,12 @@
-﻿namespace LibraryAPI.Interfaces
+﻿using LibraryAPI.Models.Dto;
+
+namespace LibraryAPI.Interfaces
 {
     public interface ILibraryBooksRentalService
     {
-        public object Get();
-        public object GetById(int id);
-        public object Add();
-        public object Update(int id);
-        public int End(int id);
+        public object Get(int? id = null, Guid? userId = null);
+        public object Add(BookReservationDto dto);
+        public object Cancel(int id);
+        public object End(int id);
     }
 }

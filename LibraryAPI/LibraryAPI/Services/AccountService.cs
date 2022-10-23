@@ -31,20 +31,154 @@ namespace LibraryAPI.Services
             _headerContextService = headerContextService;
         }
 
-
-        public object ChangePassword(ChangePasswordDto dto)
+        public object Get(Guid? userId = null)
         {
-            throw new NotImplementedException();
+            IQueryable<User> query = _context.Users
+                .AsNoTracking()
+                .Include(x => x.Person);
+
+            if (userId != null)
+            {
+                query = query.Where(x => x.Id == userId);
+            }
+
+            var fetch = query.Select(x => new
+            {
+                x.Id,
+                x.Username,
+                x.Person.FirstName,
+                x.Person.LastName,
+                x.Person.FullName,
+                x.Person.Email,
+                x.Person.Address,
+                x.Person.Gender
+            });
+
+            var result = fetch.ToList();
+
+            return result;
+        }
+
+        public object GetAuditByUserId(Guid userId)
+        {
+            var query = _context.Audits
+                .AsNoTracking()
+                .Where(x => x.UserId == userId)
+                .Select(x => new {
+                    x.Id,
+                    x.UserId,
+                    x.Operation,
+                    x.IP,
+                    x.Time,
+                    x.Description,
+                });
+
+            return query.ToList();
+        }
+
+        public async Task<object> ChangePassword(ChangePasswordDto dto, Guid userId)
+        {
+            if (dto.NewPassword != dto.ConfirmNewPassword)
+            {
+                throw new RegisterException("ChangePassword => Passwords not matching");
+            }
+
+            var user = _context.Users
+                .Include(x => x.UserCredentials)
+                .Where(x => x.IsEnabled == true && x.IsLocked == false && x.IsConfirmed == true)
+                .FirstOrDefault(x => x.Id == userId);
+
+            if (user is null)
+            {
+                throw new AuthException("ChangePassword => no user account");
+            }
+
+            var currentEntityPassword = user.UserCredentials
+                .Where(x => x.Id == user.CurrUserCredentialId)
+                .First();
+
+            var result = _passwordHasher.VerifyHashedPassword(user, currentEntityPassword.Password, dto.OldPassword);
+
+            if (result == PasswordVerificationResult.Failed)
+            {
+                throw new AuthException("ChangePassword => invalid password");
+            }
+
+            // Expired old passwords
+            currentEntityPassword.ExpiredDate = DateTime.UtcNow;
+
+            // Push new password
+            var credential = new UserCredential()
+            {
+                User = user,
+                Password = _passwordHasher.HashPassword(user, dto.NewPassword),
+                IP = _headerContextService.RemoteIpAddress(),
+            };
+
+            var strategy = _context.Database.CreateExecutionStrategy();
+            await strategy.ExecuteAsync(async () =>
+            {
+                using (var transaction = _context.Database.BeginTransaction())
+                {
+                    try
+                    {
+                        _context.UserCredentials.Add(credential);
+                        _context.SaveChanges();
+
+                        user.UserCredentials.Add(credential);
+                        user.CurrUserCredentialId = credential.Id;
+
+                        _context.Users.Update(user);
+                        _context.SaveChanges();
+
+                        transaction.Commit();
+                    }
+                    catch (Exception ex)
+                    {
+                        transaction.Rollback();
+                        throw new RegisterException("ChangePassword => system error (probably connection field)");
+                    }
+
+                }
+            });
+
+            return 200;
         }
 
         public object Close(Guid userId)
         {
-            throw new NotImplementedException();
+            var user = _context.Users
+                .Where(u => u.Id == userId)
+                .FirstOrDefault();
+
+            if (user == null)
+            {
+                throw new NotFoundException("Close => User not found");
+            }
+
+            user.IsEnabled = false;
+
+            _context.SaveChanges();
+
+            return 200;
         }
 
         public object Lock(Guid userId)
         {
-            throw new NotImplementedException();
+            var user = _context.Users
+                .Where(u => u.Id == userId)
+                .FirstOrDefault();
+
+            if (user == null)
+            {
+                throw new NotFoundException("Lock => User not found");
+            }
+
+            user.IsLocked = true;
+
+            _context.SaveChanges();
+
+            return 200;
         }
 
         public async Task<object> Register(RegisterDto dto)
@@ -70,6 +204,7 @@ namespace LibraryAPI.Services
             {
                 Username = dto.Username,
                 IsConfirmed = true,
+                IsEnabled = true,
                 Person = new Person()
                 {
                     FirstName = dto.FirstName,
@@ -80,19 +215,44 @@ namespace LibraryAPI.Services
                     PostalCode = dto.PostalCode,
                     City = dto.City,
                     State = dto.State
-                }
+                },
+                UserCredentials = new HashSet<UserCredential>()
             };
 
-            var credential = new UserCredential()
+            var strategy = _context.Database.CreateExecutionStrategy();
+            await strategy.ExecuteAsync(async () =>
             {
-                Password = _passwordHasher.HashPassword(user, dto.Password),
-                IP = _headerContextService.RemoteIpAddress()
-            };
+                using (var transaction = _context.Database.BeginTransaction())
+                {
+                    try
+                    {
+                        _context.Users.Add(user);
 
-            user.UserCredentials.Add(credential);
+                        var credential = new UserCredential()
+                        {
+                            User = user,
+                            Password = _passwordHasher.HashPassword(user, dto.Password),
+                            IP = _headerContextService.RemoteIpAddress(),
+                        };
 
-            _context.Users.Add(user);
-            _context.SaveChanges();
+                        _context.UserCredentials.Add(credential);
+
+                        _context.SaveChanges();
+
+                        user.CurrUserCredentialId = credential.Id;
+
+                        _context.SaveChanges();
+
+                        transaction.Commit();
+                    }
+                    catch (Exception ex)
+                    {
+                        transaction.Rollback();
+                        throw new RegisterException("Register => system error (probably connection field)");
+                    }
+
+                }
+            });
 
             return user.Id;
         }
