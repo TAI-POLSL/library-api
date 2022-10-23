@@ -1,4 +1,5 @@
-﻿using LibraryAPI.Exceptions;
+﻿using LibraryAPI.Enums;
+using LibraryAPI.Exceptions;
 using LibraryAPI.Interfaces;
 using LibraryAPI.Models;
 using LibraryAPI.Models.Dto;
@@ -12,13 +13,16 @@ namespace LibraryAPI.Services
 
         private readonly ILogger<LibraryBooksService> _logger;
         private readonly AppDbContext _context;
+        private readonly IAuditService _auditService;
 
         public LibraryBooksService(
             ILogger<LibraryBooksService> logger,
-            AppDbContext context)
+            AppDbContext context,
+            IAuditService auditService)
         {
             _logger = logger;
             _context = context;
+            _auditService = auditService;
         }
 
         public object Add(BookDto dto)
@@ -28,13 +32,32 @@ namespace LibraryAPI.Services
                  AuthorFirstName = dto.AuthorFirstName,
                  AuthorLastName = dto.AuthorLastName,
                  Description = dto.Description,
-                 Title = dto.Title
+                 Title = dto.Title,
+                 BookInLibrary = new BookInLibrary()
+                 {
+                      NumOfAvailable = dto.TotalBooks,
+                      NumOfRented = 0,
+                      TotalBooks = dto.TotalBooks,
+                 }
             };
 
             _context.Books.Add(book);
             _context.SaveChanges();
 
-            return book;
+            _auditService.AuditDbTable(Guid.Empty, DbTables.BOOKS, book.Id.ToString(), DbOperations.INSERT, "");
+
+            return new
+            {
+                book.Id,
+                book.Author,
+                book.AuthorFirstName,
+                book.AuthorLastName,
+                book.Title,
+                book.Description,
+                book.BookInLibrary.NumOfRented,
+                book.BookInLibrary.NumOfAvailable,
+                book.BookInLibrary.TotalBooks,
+            };
         }
 
         public object Get(int? id = null)
@@ -77,6 +100,8 @@ namespace LibraryAPI.Services
             _context.Books.Remove(entity);
             _context.SaveChanges();
 
+            _auditService.AuditDbTable(Guid.Empty, DbTables.BOOKS, entity.Id.ToString(), DbOperations.DELETE, "");
+
             return 200;
         }
 
@@ -97,7 +122,20 @@ namespace LibraryAPI.Services
          
             _context.SaveChanges();
 
-            return entity;
+            _auditService.AuditDbTable(Guid.Empty, DbTables.BOOKS, entity.Id.ToString(), DbOperations.UPDATE, "AuthorFirstName, AuthorLastName, Title, Description");
+
+            return new
+            {
+                entity.Id,
+                entity.Author,
+                entity.AuthorFirstName,
+                entity.AuthorLastName,
+                entity.Title,
+                entity.Description,
+                entity.BookInLibrary.NumOfRented,
+                entity.BookInLibrary.NumOfAvailable,
+                entity.BookInLibrary.TotalBooks,
+            }; ;
         }
 
         public object UpdateTotalQuantity(int id, int quantity)
@@ -137,7 +175,20 @@ namespace LibraryAPI.Services
 
             _context.SaveChanges();
 
-            return entity;
+            _auditService.AuditDbTable(Guid.Empty, DbTables.BOOKS, entity.Id.ToString(), DbOperations.UPDATE, "TotalBooks");
+
+            return new
+            {
+                entity.Id,
+                entity.Author,
+                entity.AuthorFirstName,
+                entity.AuthorLastName,
+                entity.Title,
+                entity.Description,
+                entity.BookInLibrary.NumOfRented,
+                entity.BookInLibrary.NumOfAvailable,
+                entity.BookInLibrary.TotalBooks,
+            }; ;
         }
     }
 }

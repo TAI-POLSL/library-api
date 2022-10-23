@@ -5,6 +5,7 @@ using Microsoft.AspNetCore.Identity;
 using LibraryAPI.Models;
 using LibraryAPI.Exceptions;
 using Microsoft.EntityFrameworkCore;
+using LibraryAPI.Enums;
 
 namespace LibraryAPI.Services
 {
@@ -16,19 +17,22 @@ namespace LibraryAPI.Services
         private readonly IPasswordHasher<User> _passwordHasher;
         private readonly IConfiguration _configuration;
         private readonly IHeaderContextService _headerContextService;
+        private readonly IAuditService _auditService;
 
         public AccountService(
             ILogger<AccountService> logger,
             AppDbContext context,
             IPasswordHasher<User> passwordHasher,
             IConfiguration configuration,
-            IHeaderContextService headerContextService)
+            IHeaderContextService headerContextService,
+            IAuditService auditService)
         {
             _logger = logger;
             _context = context;
             _passwordHasher = passwordHasher;
             _configuration = configuration;
             _headerContextService = headerContextService;
+            _auditService = auditService;
         }
 
         public object Get(Guid? userId = null)
@@ -90,6 +94,8 @@ namespace LibraryAPI.Services
 
             if (user is null)
             {
+    
+                _auditService.SecurityAudit(userId, Enums.SecurityOperation.USER_PASSWORD_CHANGE, $"no user account");
                 throw new AuthException("ChangePassword => no user account");
             }
 
@@ -101,6 +107,7 @@ namespace LibraryAPI.Services
 
             if (result == PasswordVerificationResult.Failed)
             {
+                _auditService.SecurityAudit(userId, Enums.SecurityOperation.USER_PASSWORD_CHANGE, $"{user.Username}: incorrect current auth password");
                 throw new AuthException("ChangePassword => invalid password");
             }
 
@@ -116,7 +123,7 @@ namespace LibraryAPI.Services
             };
 
             var strategy = _context.Database.CreateExecutionStrategy();
-            await strategy.ExecuteAsync(async () =>
+            await strategy.ExecuteAsync(async ()  =>
             {
                 using (var transaction = _context.Database.BeginTransaction())
                 {
@@ -126,17 +133,24 @@ namespace LibraryAPI.Services
                         _context.SaveChanges();
 
                         user.UserCredentials.Add(credential);
+                        var oldUserCredentialId = user.CurrUserCredentialId;
                         user.CurrUserCredentialId = credential.Id;
 
                         _context.Users.Update(user);
                         _context.SaveChanges();
 
+                        _auditService.AuditDbTable(Guid.Empty, DbTables.USERS, user.Id.ToString(), DbOperations.UPDATE, $"CurrUserCredentialId from {oldUserCredentialId} to {credential.Id}");
+                        _auditService.AuditDbTable(Guid.Empty, DbTables.USERS_CREDENTIALS, credential.Id.ToString(), DbOperations.INSERT, "");
+
+                        _auditService.SecurityAudit(userId, Enums.SecurityOperation.USER_PASSWORD_CHANGE, $"{user.Username}: successfull password update");
+                        
                         transaction.Commit();
                     }
                     catch (Exception ex)
                     {
                         transaction.Rollback();
-                        throw new RegisterException("ChangePassword => system error (probably connection field)");
+                        _auditService.SecurityAudit(userId, Enums.SecurityOperation.USER_PASSWORD_CHANGE, $"{user.Username}: unsuccessfull password update");
+                        throw new RegisterException(ex.Message);
                     }
 
                 }
@@ -153,12 +167,17 @@ namespace LibraryAPI.Services
 
             if (user == null)
             {
+                _auditService.SecurityAudit(userId, Enums.SecurityOperation.USER_ACCOUNT_DELETED, $"no user account");
                 throw new NotFoundException("Close => User not found");
             }
 
+            var old = user.IsEnabled;
             user.IsEnabled = false;
 
             _context.SaveChanges();
+
+            _auditService.AuditDbTable(Guid.Empty, DbTables.USERS, user.Id.ToString(), DbOperations.UPDATE, $"IsEnable from {old} to {user.IsEnabled}");
+            _auditService.SecurityAudit(userId, Enums.SecurityOperation.USER_ACCOUNT_DELETED, $"{user.Username}: account close successfull");
 
             return 200;
         }
@@ -171,12 +190,17 @@ namespace LibraryAPI.Services
 
             if (user == null)
             {
+                _auditService.SecurityAudit(userId, Enums.SecurityOperation.USER_ACCOUNT_LOCK, $"no user account");
                 throw new NotFoundException("Lock => User not found");
             }
 
+            var old = user.IsLocked;
             user.IsLocked = true;
 
             _context.SaveChanges();
+
+            _auditService.AuditDbTable(Guid.Empty, DbTables.USERS, user.Id.ToString(), DbOperations.UPDATE, $"IsLocked from {old} to {user.IsLocked}");
+            _auditService.SecurityAudit(userId, Enums.SecurityOperation.USER_ACCOUNT_LOCK, $"{user.Username}: account lock successfull");
 
             return 200;
         }
@@ -243,12 +267,18 @@ namespace LibraryAPI.Services
 
                         _context.SaveChanges();
 
+                        _auditService.AuditDbTable(user.Id, DbTables.USERS, user.Id.ToString(), DbOperations.INSERT, "");
+                        _auditService.AuditDbTable(user.Id, DbTables.USERS_CREDENTIALS, credential.Id.ToString(), DbOperations.INSERT, "");
+
+                        _auditService.SecurityAudit(user.Id, Enums.SecurityOperation.USER_ACCOUNT_CREATED, $"{user.Username}: account create successfull");
+
                         transaction.Commit();
                     }
                     catch (Exception ex)
                     {
                         transaction.Rollback();
-                        throw new RegisterException("Register => system error (probably connection field)");
+                        _auditService.SecurityAudit(user.Id, Enums.SecurityOperation.USER_ACCOUNT_CREATED, $"{user.Username}: account not create successfull");
+                        throw new RegisterException(ex.Message);
                     }
 
                 }

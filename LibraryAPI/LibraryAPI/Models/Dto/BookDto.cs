@@ -8,5 +8,6 @@ namespace LibraryAPI.Models.Dto
         public string AuthorLastName { get; set; }
         public string Title { get; set; }
         public string Description { get; set; }
+        public int TotalBooks { get; set; }
     }
 }

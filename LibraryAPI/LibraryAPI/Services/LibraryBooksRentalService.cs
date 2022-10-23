@@ -1,4 +1,5 @@
-﻿using LibraryAPI.Exceptions;
+﻿using LibraryAPI.Enums;
+using LibraryAPI.Exceptions;
 using LibraryAPI.Interfaces;
 using LibraryAPI.Models;
 using LibraryAPI.Models.Dto;
@@ -11,24 +12,27 @@ namespace LibraryAPI.Services
     {
         private readonly ILogger<LibraryBooksRentalService> _logger;
         private readonly AppDbContext _context;
+        private readonly IAuditService _auditService;
 
         public LibraryBooksRentalService(
             ILogger<LibraryBooksRentalService> logger,
-            AppDbContext context)
+            AppDbContext context,
+            IAuditService auditService)
         {
             _logger = logger;
             _context = context;
+            _auditService = auditService;
         }
 
         public object Add(BookReservationDto dto)
         {
-            string user = _context.Users
+            var user = _context.Users
                 .AsNoTracking()
                 .Where(x => x.Id == dto.UserId)
                 .Select(x => x.Username)
-                .FirstOrDefault("");
+                .FirstOrDefault();
 
-            if (user == "")
+            if (user is null)
             {
                 throw new NotFoundException($"Add => NOT FOUND user (id: {dto.UserId})");
             }
@@ -56,6 +60,7 @@ namespace LibraryAPI.Services
             {
                 UserId = dto.UserId,
                 BookId = dto.BookId,
+                Status = BookRentStatus.OPEN,
                 StartDate = DateTime.UtcNow,
                 EndDate = dto.EndDate
             };
@@ -66,7 +71,17 @@ namespace LibraryAPI.Services
             _context.UsersBooksRented.Add(entity);
             _context.SaveChanges();
 
-            return entity;
+            _auditService.AuditDbTable(Guid.Empty, DbTables.USERS_BOOKS_RENTED, entity.Id.ToString(), DbOperations.INSERT, "");
+
+            return new
+            {
+                entity.Id,
+                entity.BookId,
+                entity.UserId,
+                entity.Status,
+                entity.StartDate,
+                entity.EndDate,
+            };
         }
 
         public object Get(int? id = null, Guid? userId = null)
@@ -94,6 +109,7 @@ namespace LibraryAPI.Services
                 x.Book.AuthorLastName,
                 x.Book.Author,
                 x.Book.Title,
+                x.Status,
                 x.StartDate,
                 x.EndDate,
                 user = new {
@@ -119,11 +135,31 @@ namespace LibraryAPI.Services
                 throw new NotFoundException($"Cancel => book rented NOT FOUND (id: {id})");
             }
 
+            if (entity.Status != BookRentStatus.OPEN)
+            {
+                throw new NotFoundException($"End => can not change history status");
+            }
+
             entity.EndDate = DateTime.UtcNow;
+            entity.Status = BookRentStatus.CANCEL;
+
+            var bookInLibrary = _context.BooksInLibrary
+                .Where(x => x.BookId == entity.BookId)
+                .FirstOrDefault();
+
+            if (bookInLibrary == null)
+            {
+                throw new NotFoundException($"Cancel => system corrupt");
+            }
+
+            bookInLibrary.NumOfAvailable += 1;
+            bookInLibrary.NumOfRented -= 1;
 
             _context.SaveChanges();
 
-            return entity;
+            _auditService.AuditDbTable(Guid.Empty, DbTables.USERS_BOOKS_RENTED, entity.Id.ToString(), DbOperations.UPDATE, "Cancel");
+
+            return 200;
         }
 
         public object End(int id)
@@ -136,11 +172,31 @@ namespace LibraryAPI.Services
                 throw new NotFoundException($"End => book rented NOT FOUND (id: {id})");
             }
 
+            if (entity.Status != BookRentStatus.OPEN)
+            {
+                throw new NotFoundException($"End => can not change history status");
+            }
+
             entity.EndDate = DateTime.UtcNow;
+            entity.Status = BookRentStatus.END;
+
+            var bookInLibrary = _context.BooksInLibrary
+               .Where(x => x.BookId == entity.BookId)
+               .FirstOrDefault();
+
+            if (bookInLibrary == null)
+            {
+                throw new NotFoundException($"Cancel => system corrupt");
+            }
+
+            bookInLibrary.NumOfAvailable += 1;
+            bookInLibrary.NumOfRented -= 1;
 
             _context.SaveChanges();
 
-            return entity;
+            _auditService.AuditDbTable(Guid.Empty, DbTables.USERS_BOOKS_RENTED, entity.Id.ToString(), DbOperations.UPDATE, "End");
+
+            return 200;
         }
     }
 }

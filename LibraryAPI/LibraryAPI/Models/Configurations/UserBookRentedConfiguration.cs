@@ -14,6 +14,7 @@ namespace LibraryAPI.Models.Configurations
             modelBuilder.Property(p => p.UserId).IsRequired();
             modelBuilder.Property(p => p.BookId).IsRequired();
 
+            modelBuilder.Property(p => p.Status).IsRequired();
             modelBuilder.Property(p => p.StartDate).HasDefaultValue<DateTime>(DateTime.UtcNow).IsRequired();
             modelBuilder.Property(p => p.EndDate).IsRequired();
 
@@ -22,6 +23,7 @@ namespace LibraryAPI.Models.Configurations
             modelBuilder.Property(p => p.Id).HasColumnName("Id");
             modelBuilder.Property(p => p.UserId).HasColumnName("UserId");
             modelBuilder.Property(p => p.BookId).HasColumnName("BookId");
+            modelBuilder.Property(p => p.Status).HasColumnName("Status");
             modelBuilder.Property(p => p.StartDate).HasColumnName("StartDate");
             modelBuilder.Property(p => p.EndDate).HasColumnName("EndDate");
         }

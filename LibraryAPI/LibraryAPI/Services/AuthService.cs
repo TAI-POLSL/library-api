@@ -14,17 +14,20 @@ namespace LibraryAPI.Services
         private readonly AppDbContext _context;
         private readonly IConfiguration _configuration;
         private readonly IPasswordHasher<User> _passwordHasher;
+        private readonly IAuditService _auditService;
 
         public AuthService(
             ILogger<AuthService> logger,
             AppDbContext context,
             IConfiguration configuration,
-            IPasswordHasher<User> passwordHasher)
+            IPasswordHasher<User> passwordHasher,
+            IAuditService auditService)
         {
             _logger = logger;
             _context = context;
             _configuration = configuration;
             _passwordHasher = passwordHasher;
+            _auditService = auditService;
         }
 
 
@@ -34,18 +37,27 @@ namespace LibraryAPI.Services
               .AsNoTracking()
               .FirstOrDefault(x => x.Username == dto.Username);
 
-            if (user is null || user.IsEnabled == false)
+            if (user is null)
             {
+                _auditService.SecurityAuditUserLoginAttemptFails(dto.Username, $" => not exits");
+                throw new AuthException("Login => user not exits");
+            }
+
+            if (user.IsEnabled == false)
+            {
+                _auditService.SecurityAuditUserLoginAttemptFails(dto.Username, $" => is closed");
                 throw new AuthException("Login => user not exits");
             }
 
             if (user.IsLocked == true)
             {
+                _auditService.SecurityAuditUserLoginAttemptFails(user.Username, $" => is locked");
                 throw new AuthException("Login => account is locked. Contact with library employee");
             }
 
             if (user.IsConfirmed == false)
             {
+                _auditService.SecurityAuditUserLoginAttemptFails(user.Username, $" => not confirmed");
                 throw new AuthException("Login => account is not confirmed");
             }
 
@@ -55,8 +67,9 @@ namespace LibraryAPI.Services
               .AsNoTracking()
               .FirstOrDefault(x => x.Id == user.CurrUserCredentialId);
 
-            if (userHashPasswords is null || user.IsEnabled == false)
+            if (userHashPasswords is null)
             {
+                _auditService.SecurityAuditUserLoginAttemptFails(user.Id, user.Username, $" => password is null");
                 throw new AuthException("Login => username or password invalid");
             }
 
@@ -64,12 +77,15 @@ namespace LibraryAPI.Services
 
             if (result == PasswordVerificationResult.Failed)
             {
+                _auditService.SecurityAuditUserLoginAttemptFails(user.Id, user.Username, $" => incorrect password");
                 throw new AuthException("Login => username or password invalid");
             }
 
             // Auth correct
 
-            // Tod0 ...
+            // Todo ...
+
+            _auditService.SecurityAuditUserLoginAttemptSuccess(user.Id, user.Username);
 
             return user.Id;
         }
