@@ -23,6 +23,7 @@ namespace LibraryAPI.Controllers
         }
 
         [HttpPost("login")]
+        [AllowAnonymous]
         public async Task<ActionResult> Login([FromBody] LoginDto dto)
         {
             object code = await _service.LoginAsync(dto);

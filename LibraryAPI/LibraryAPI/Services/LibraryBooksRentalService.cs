@@ -13,15 +13,18 @@ namespace LibraryAPI.Services
         private readonly ILogger<LibraryBooksRentalService> _logger;
         private readonly AppDbContext _context;
         private readonly IAuditService _auditService;
+        private readonly IHeaderContextService _headerContextService;
 
         public LibraryBooksRentalService(
             ILogger<LibraryBooksRentalService> logger,
             AppDbContext context,
-            IAuditService auditService)
+            IAuditService auditService,
+            IHeaderContextService headerContextService)
         {
             _logger = logger;
             _context = context;
             _auditService = auditService;
+            _headerContextService = headerContextService;
         }
 
         public object Add(BookRentByUserDto dto)
@@ -29,12 +32,17 @@ namespace LibraryAPI.Services
             var user = _context.Users
                 .AsNoTracking()
                 .Where(x => x.Id == dto.UserId)
-                .Select(x => x.Username)
                 .FirstOrDefault();
 
             if (user is null)
             {
                 throw new NotFoundException($"Add => NOT FOUND user (id: {dto.UserId})");
+            }
+
+            // Only clients can rents books
+            if (user.Role != UserRoles.CLIENT)
+            {
+                throw new BadHttpRequestException($"Add => Not a client (id: {dto.UserId})");
             }
 
             var booksInLibary = _context.BooksInLibrary
@@ -102,6 +110,26 @@ namespace LibraryAPI.Services
                 query = query.Where(x => x.UserId == userId);
             }
 
+            // CLIENT can get only own rentals
+            if (_headerContextService.GetUserRole() == UserRoles.CLIENT)
+            {
+                query = query.Where(x => x.UserId == _headerContextService.GetUserId());
+
+                var fetchOwn = query.Select(x => new
+                {
+                    x.Id,
+                    x.Book.AuthorFirstName,
+                    x.Book.AuthorLastName,
+                    x.Book.Author,
+                    x.Book.Title,
+                    x.Status,
+                    x.StartDate,
+                    x.EndDate,
+                });
+
+                return fetchOwn.ToList();
+            }
+
             var fetch = query.Select(x => new
             {
                 x.Id,
@@ -120,9 +148,7 @@ namespace LibraryAPI.Services
                 }
             });
 
-            var result = fetch.ToList();
-
-            return result;
+            return fetch.ToList();
         }
 
         public object Cancel(int id)

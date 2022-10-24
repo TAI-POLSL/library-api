@@ -87,6 +87,17 @@ namespace LibraryAPI.Services
             return _context.Users
                 .AsNoTracking()
                 .Include(x => x.Person)
+                .Select(x => new
+                {
+                    x.Id,
+                    x.Username,
+                    x.Person.FirstName,
+                    x.Person.LastName,
+                    x.Person.FullName,
+                    x.Person.Email,
+                    x.Person.Address,
+                    x.Person.Gender
+                })
                 .FirstOrDefault(x => x.Id == _headerContextService.GetUserId());
         }
 
@@ -171,40 +182,41 @@ namespace LibraryAPI.Services
             return 200;
         }
 
-        public object CloseStrategy(Guid? userId)
+        public object CloseStrategy(Guid? targetUserId)
         {
-            userId = userId != null ? userId : _headerContextService.GetUserId();
+            targetUserId = targetUserId != null ? targetUserId : _headerContextService.GetUserId();
 
-            var user = _context.Users
-              .Where(u => u.Id == userId && u.IsEnabled == true)
+            var targetUser = _context.Users
+              .Where(u => u.Id == targetUserId && u.IsEnabled == true)
               .FirstOrDefault();
 
-            if (user == null)
+            if (targetUser == null)
             {
                 _auditService.SecurityAudit(null, Enums.SecurityOperation.USER_ACCOUNT_DELETED, $"no user account or allready closed");
                 throw new NotFoundException("Close => User not exits or allready closed");
             }
 
-            // One ADMIN account is nessesery
+            // One ADMIN active account is nessesery
             // EMPLOYEE can only close CLIENTS accounts
 
             switch(_headerContextService.GetUserRole())
             {
                 case UserRoles.ADMIN:
-
-                    var count = _context.Users
-                      .Where(u => u.Role == UserRoles.ADMIN)
-                      .ToList()
-                      .Count;
-
-                    if(count == 1 && user.Role == UserRoles.ADMIN)
+                    if(targetUser.Role == UserRoles.ADMIN)
                     {
-                        throw new BadHttpRequestException("Close => not enought admin's accounts");
-                    }
+                        var count = _context.Users
+                          .Where(u => u.Role == UserRoles.ADMIN && u.IsEnabled == true && u.IsLocked == false)
+                          .ToList()
+                          .Count;
 
+                        if(count <= 1)
+                        {
+                            throw new BadHttpRequestException("Close => not enought active admin's accounts");
+                        }
+                    }
                     break;
                 case UserRoles.EMPLOYEE:
-                    if (user.Role != UserRoles.CLIENT)
+                    if (targetUser.Role != UserRoles.CLIENT)
                     {
                         throw new ForbiddenException("Close => role");
                     }
@@ -214,7 +226,7 @@ namespace LibraryAPI.Services
 
             }
 
-            return CloseAccountProcedure(ref user);
+            return CloseAccountProcedure(ref targetUser);
         }
 
         private object CloseAccountProcedure(ref User user)
@@ -247,12 +259,35 @@ namespace LibraryAPI.Services
                 throw new BadHttpRequestException("ChangeAccountLockStatus => action not nessesery");
             }
 
+            // One ADMIN account active is nessesery
             // EMPLOYEE can only (un)lock CLIENTS accounts
-            if (_headerContextService.GetUserRole() == UserRoles.EMPLOYEE && targetUser.Role != UserRoles.CLIENT)
+            switch (_headerContextService.GetUserRole())
             {
-                throw new ForbiddenException("ChangeAccountLockStatus => not enought role");
-            }
+                case UserRoles.ADMIN:
+                    if (targetUser.Role == UserRoles.ADMIN)
+                    {
+                        var count = _context.Users
+                          .Where(u => u.Role == UserRoles.ADMIN && u.IsEnabled == true && u.IsLocked == false)
+                          .ToList()
+                          .Count;
 
+                        if(count <= 1)
+                        {
+                            throw new BadHttpRequestException("Close => not enought active admin's accounts");
+                        }
+                    }
+                    break;
+                case UserRoles.EMPLOYEE:
+                    if (targetUser.Role != UserRoles.CLIENT)
+                    {
+                        throw new ForbiddenException("ChangeAccountLockStatus => not enought role");
+                    }
+                    break;
+                default:
+                    throw new ForbiddenException("Close => role");
+
+            }
+            
             var old = targetUser.IsLocked;
             targetUser.IsLocked = status;
 
@@ -286,7 +321,6 @@ namespace LibraryAPI.Services
             };
 
             // EMPLOYEE can only register CLIENTS accounts
-
             if(cookieUser.Role == UserRoles.EMPLOYEE && dto.Roles != UserRoles.CLIENT)
             {
                 throw new RegisterException("Register => forbidden");

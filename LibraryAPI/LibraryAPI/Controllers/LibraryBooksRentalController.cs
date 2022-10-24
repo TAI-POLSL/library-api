@@ -20,7 +20,7 @@ namespace LibraryAPI.Controllers
         [Authorize(Roles = "ADMIN, EMPLOYEE, CLIENT")]
         public ActionResult Get()
         {
-            // TODO CLIENT can get only own rentals
+            // CLIENT can get only own rentals
             var obj = _service.Get();
             return Ok(obj);
         }
@@ -29,7 +29,7 @@ namespace LibraryAPI.Controllers
         [Authorize(Roles = "ADMIN, EMPLOYEE, CLIENT")]
         public ActionResult GetById([FromRoute] int id)
         {
-            // TODO CLIENT can get only own rental details
+            // CLIENT can get only own rental details
             var obj = _service.Get(id);
             return Ok(obj);
         }
@@ -46,7 +46,7 @@ namespace LibraryAPI.Controllers
         [Authorize(Roles = "ADMIN, EMPLOYEE")]
         public ActionResult Add([FromBody] BookRentByUserDto dto)
         {
-            // TODO only clients can rents books
+            // Only clients can rents books
             var obj = _service.Add(dto);
             return Ok(obj);
         }

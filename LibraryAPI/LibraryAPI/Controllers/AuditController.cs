@@ -9,14 +9,17 @@ namespace LibraryAPI.Controllers
     public class AuditController : ControllerBase
     {
         private readonly IAuditService _service;
+        private readonly IHeaderContextService _headerContextService;
 
         public AuditController(
-            IAuditService service
+            IAuditService service,
+            IHeaderContextService headerContextService
         ) {
             _service = service;
+            _headerContextService = headerContextService;
         }
 
-        [HttpGet("db/audits")]
+        [HttpGet("audits/db")]
         [Authorize(Roles = "ADMIN")]
         public object GetAudits()
         {
@@ -24,7 +27,7 @@ namespace LibraryAPI.Controllers
             return Ok(obj);
         }
 
-        [HttpGet]
+        [HttpGet("security")]
         [Authorize(Roles = "ADMIN")]
         public ActionResult GetSecurity()
         {
@@ -32,20 +35,36 @@ namespace LibraryAPI.Controllers
             return Ok(obj);
         }
 
-        [HttpGet("{userId}")]
-        [Authorize(Roles = "ADMIN, EMPLOYEE, CLIENT")]
+        [HttpGet("security/{userId}")]
+        [Authorize(Roles = "ADMIN")]
         public ActionResult GetSecurityByUserId([FromRoute] Guid userId)
         {
-            // TODO EMPLOYEE, CLIENT get only own
             var obj = _service.GetSecurityByUserId(userId);
             return Ok(obj);
         }
 
-        [HttpGet("{userId}/sessions")]
+        [HttpGet("security/own")]
         [Authorize(Roles = "ADMIN, EMPLOYEE, CLIENT")]
+        public ActionResult GetOwnSecurityAudits()
+        {
+            Guid userId = _headerContextService.GetUserId();
+            var obj = _service.GetSecurityByUserId(userId);
+            return Ok(obj);
+        }
+
+        [HttpGet("sessions/{userId}")]
+        [Authorize(Roles = "ADMIN")]
         public ActionResult GetUserSessions([FromRoute] Guid userId)
         {
-            // TODO EMPLOYEE, CLIENT get only own
+            var obj = _service.GetUserSessions(userId);
+            return Ok(obj);
+        }
+
+        [HttpGet("sessions/own")]
+        [Authorize(Roles = "ADMIN, EMPLOYEE, CLIENT")]
+        public ActionResult GetOwnSessions()
+        {
+            Guid userId = _headerContextService.GetUserId();
             var obj = _service.GetUserSessions(userId);
             return Ok(obj);
         }
