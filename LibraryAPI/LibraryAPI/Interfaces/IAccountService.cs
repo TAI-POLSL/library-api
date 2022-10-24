@@ -10,5 +10,7 @@ namespace LibraryAPI.Interfaces
         public object Lock(Guid userId);
         public Task<object> ChangePassword(ChangePasswordDto dto, Guid userId);
         public object Close(Guid userId);
+        public Task<object> GenerateAdmin();
+        
     }
 }

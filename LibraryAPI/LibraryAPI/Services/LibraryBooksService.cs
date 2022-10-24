@@ -44,7 +44,7 @@ namespace LibraryAPI.Services
             _context.Books.Add(book);
             _context.SaveChanges();
 
-            _auditService.AuditDbTable(Guid.Empty, DbTables.BOOKS, book.Id.ToString(), DbOperations.INSERT, "");
+            _auditService.AuditDbTable(DbTables.BOOKS, book.Id.ToString(), DbOperations.INSERT, "");
 
             return new
             {
@@ -108,7 +108,7 @@ namespace LibraryAPI.Services
             _context.Books.Remove(entity);
             _context.SaveChanges();
 
-            _auditService.AuditDbTable(Guid.Empty, DbTables.BOOKS, entity.Id.ToString(), DbOperations.DELETE, "");
+            _auditService.AuditDbTable(DbTables.BOOKS, entity.Id.ToString(), DbOperations.DELETE, "");
 
             return 200;
         }
@@ -130,7 +130,7 @@ namespace LibraryAPI.Services
          
             _context.SaveChanges();
 
-            _auditService.AuditDbTable(Guid.Empty, DbTables.BOOKS, entity.Id.ToString(), DbOperations.UPDATE, "AuthorFirstName, AuthorLastName, Title, Description");
+            _auditService.AuditDbTable(DbTables.BOOKS, entity.Id.ToString(), DbOperations.UPDATE, "AuthorFirstName, AuthorLastName, Title, Description");
 
             return new
             {
@@ -183,7 +183,7 @@ namespace LibraryAPI.Services
 
             _context.SaveChanges();
 
-            _auditService.AuditDbTable(Guid.Empty, DbTables.BOOKS, entity.Id.ToString(), DbOperations.UPDATE, "TotalBooks");
+            _auditService.AuditDbTable(DbTables.BOOKS, entity.Id.ToString(), DbOperations.UPDATE, "TotalBooks");
 
             return new
             {

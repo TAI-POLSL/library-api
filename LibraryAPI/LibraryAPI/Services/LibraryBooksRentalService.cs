@@ -71,7 +71,7 @@ namespace LibraryAPI.Services
             _context.UsersBooksRented.Add(entity);
             _context.SaveChanges();
 
-            _auditService.AuditDbTable(Guid.Empty, DbTables.USERS_BOOKS_RENTED, entity.Id.ToString(), DbOperations.INSERT, "");
+            _auditService.AuditDbTable(DbTables.USERS_BOOKS_RENTED, entity.Id.ToString(), DbOperations.INSERT, "");
 
             return new
             {
@@ -157,7 +157,7 @@ namespace LibraryAPI.Services
 
             _context.SaveChanges();
 
-            _auditService.AuditDbTable(Guid.Empty, DbTables.USERS_BOOKS_RENTED, entity.Id.ToString(), DbOperations.UPDATE, "Cancel");
+            _auditService.AuditDbTable(DbTables.USERS_BOOKS_RENTED, entity.Id.ToString(), DbOperations.UPDATE, "Cancel");
 
             return 200;
         }
@@ -194,7 +194,7 @@ namespace LibraryAPI.Services
 
             _context.SaveChanges();
 
-            _auditService.AuditDbTable(Guid.Empty, DbTables.USERS_BOOKS_RENTED, entity.Id.ToString(), DbOperations.UPDATE, "End");
+            _auditService.AuditDbTable(DbTables.USERS_BOOKS_RENTED, entity.Id.ToString(), DbOperations.UPDATE, "End");
 
             return 200;
         }

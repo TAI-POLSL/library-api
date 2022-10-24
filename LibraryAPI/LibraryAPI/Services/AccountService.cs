@@ -139,8 +139,8 @@ namespace LibraryAPI.Services
                         _context.Users.Update(user);
                         _context.SaveChanges();
 
-                        _auditService.AuditDbTable(Guid.Empty, DbTables.USERS, user.Id.ToString(), DbOperations.UPDATE, $"CurrUserCredentialId from {oldUserCredentialId} to {credential.Id}");
-                        _auditService.AuditDbTable(Guid.Empty, DbTables.USERS_CREDENTIALS, credential.Id.ToString(), DbOperations.INSERT, "");
+                        _auditService.AuditDbTable(DbTables.USERS, user.Id.ToString(), DbOperations.UPDATE, $"CurrUserCredentialId from {oldUserCredentialId} to {credential.Id}");
+                        _auditService.AuditDbTable(DbTables.USERS_CREDENTIALS, credential.Id.ToString(), DbOperations.INSERT, "");
 
                         _auditService.SecurityAudit(userId, Enums.SecurityOperation.USER_PASSWORD_CHANGE, $"{user.Username}: successfull password update");
                         
@@ -176,7 +176,7 @@ namespace LibraryAPI.Services
 
             _context.SaveChanges();
 
-            _auditService.AuditDbTable(Guid.Empty, DbTables.USERS, user.Id.ToString(), DbOperations.UPDATE, $"IsEnable from {old} to {user.IsEnabled}");
+            _auditService.AuditDbTable(DbTables.USERS, user.Id.ToString(), DbOperations.UPDATE, $"IsEnable from {old} to {user.IsEnabled}");
             _auditService.SecurityAudit(userId, Enums.SecurityOperation.USER_ACCOUNT_DELETED, $"{user.Username}: account close successfull");
 
             return 200;
@@ -199,7 +199,7 @@ namespace LibraryAPI.Services
 
             _context.SaveChanges();
 
-            _auditService.AuditDbTable(Guid.Empty, DbTables.USERS, user.Id.ToString(), DbOperations.UPDATE, $"IsLocked from {old} to {user.IsLocked}");
+            _auditService.AuditDbTable(DbTables.USERS, user.Id.ToString(), DbOperations.UPDATE, $"IsLocked from {old} to {user.IsLocked}");
             _auditService.SecurityAudit(userId, Enums.SecurityOperation.USER_ACCOUNT_LOCK, $"{user.Username}: account lock successfull");
 
             return 200;
@@ -282,8 +282,8 @@ namespace LibraryAPI.Services
 
                         _context.SaveChanges();
 
-                        _auditService.AuditDbTable(user.Id, DbTables.USERS, user.Id.ToString(), DbOperations.INSERT, "");
-                        _auditService.AuditDbTable(user.Id, DbTables.USERS_CREDENTIALS, credential.Id.ToString(), DbOperations.INSERT, "");
+                        _auditService.AuditDbTable(DbTables.USERS, user.Id.ToString(), DbOperations.INSERT, "");
+                        _auditService.AuditDbTable(DbTables.USERS_CREDENTIALS, credential.Id.ToString(), DbOperations.INSERT, "");
 
                         _auditService.SecurityAudit(user.Id, Enums.SecurityOperation.USER_ACCOUNT_CREATED, $"{user.Username}: account create successfull");
 
@@ -292,7 +292,83 @@ namespace LibraryAPI.Services
                     catch (Exception ex)
                     {
                         transaction.Rollback();
-                        _auditService.SecurityAudit(user.Id, Enums.SecurityOperation.USER_ACCOUNT_CREATED, $"{user.Username}: account not create successfull");
+                        _auditService.SecurityAudit(null, Enums.SecurityOperation.USER_ACCOUNT_CREATED, $"{user.Username}: account not create successfull");
+                        throw new RegisterException(ex.Message);
+                    }
+
+                }
+            });
+
+            return user.Id;
+        }
+
+        public async Task<object> GenerateAdmin()
+        {
+
+            int counts = _context.Users
+                .AsNoTracking()
+                .Where(x => x.Role == UserRoles.ADMIN)
+                .ToList()
+                .Count;
+
+            if (counts > 0)
+            {
+                _auditService.SecurityAudit(null, Enums.SecurityOperation.USER_ACCOUNT_CREATED, $"ADMIN: ROOT account not create successfull");
+                throw new Exception("GenerateAdmin => some admins accounts exits");
+            }
+
+            var user = new User()
+            {
+                Username = "ADMIN",
+                IsConfirmed = true,
+                IsEnabled = true,
+                Role = UserRoles.ADMIN,
+                Person = new Person()
+                {
+                    FirstName = "ROOT",
+                    LastName = "ROOT",
+                    Gender = 0,
+                    Email = "ROOT@ROOT.COM",
+                    StreetAddress = "",
+                    PostalCode = "",
+                    City = "",
+                    State = ""
+                },
+                UserCredentials = new HashSet<UserCredential>()
+            };
+
+            var strategy = _context.Database.CreateExecutionStrategy();
+            await strategy.ExecuteAsync(async () =>
+            {
+                using (var transaction = _context.Database.BeginTransaction())
+                {
+                    try
+                    {
+                        _context.Users.Add(user);
+
+                        var credential = new UserCredential()
+                        {
+                            User = user,
+                            Password = _passwordHasher.HashPassword(user, "ADMIN_ROOT"),
+                            IP = _headerContextService.GetUserRemoteIpAddress(),
+                        };
+
+                        _context.UserCredentials.Add(credential);
+
+                        _context.SaveChanges();
+
+                        user.CurrUserCredentialId = credential.Id;
+
+                        _context.SaveChanges();
+
+                        _auditService.SecurityAudit(user.Id, Enums.SecurityOperation.USER_ACCOUNT_CREATED, $"{user.Username}: ROOT account create successfull");
+
+                        transaction.Commit();
+                    }
+                    catch (Exception ex)
+                    {
+                        transaction.Rollback();
+                        _auditService.SecurityAudit(null, Enums.SecurityOperation.USER_ACCOUNT_CREATED, $"{user.Username}: ROOT account not create successfull");
                         throw new RegisterException(ex.Message);
                     }
 

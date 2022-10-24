@@ -78,5 +78,15 @@ namespace LibraryAPI.Controllers
             var obj = _service.Close(userId);
             return Ok(obj);
         }
+
+        // TODO Seed account
+
+        [AllowAnonymous]
+        [HttpPost("account/generate/admin")]
+        public async Task<ActionResult> GenerateAdmin()
+        {
+            var obj = await _service.GenerateAdmin();
+            return Ok(obj);
+        }
     }
 }

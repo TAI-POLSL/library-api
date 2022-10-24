@@ -51,25 +51,26 @@ namespace LibraryAPI.Services
 
             if (user is null)
             {
-                _auditService.SecurityAuditUserLoginAttemptFails(dto.Username, $" => not exits");
+                _auditService.SecurityAuditUserLoginAttemptFails(null, dto.Username, $"=> user not exits");
+                _logger.LogError("Login => user not exits");
                 throw new AuthException("Login => user not exits");
             }
 
             if (user.IsEnabled == false)
             {
-                _auditService.SecurityAuditUserLoginAttemptFails(dto.Username, $" => is closed");
+                _auditService.SecurityAuditUserLoginAttemptFails(user.Id, dto.Username, $"=> is closed");
                 throw new AuthException("Login => user not exits");
             }
 
             if (user.IsLocked == true)
             {
-                _auditService.SecurityAuditUserLoginAttemptFails(user.Username, $" => is locked");
+                _auditService.SecurityAuditUserLoginAttemptFails(user.Id, user.Username, $"=> is locked");
                 throw new AuthException("Login => account is locked. Contact with library employee");
             }
 
             if (user.IsConfirmed == false)
             {
-                _auditService.SecurityAuditUserLoginAttemptFails(user.Username, $" => not confirmed");
+                _auditService.SecurityAuditUserLoginAttemptFails(user.Id, user.Username, $"=> not confirmed");
                 throw new AuthException("Login => account is not confirmed");
             }
 
@@ -81,7 +82,7 @@ namespace LibraryAPI.Services
 
             if (userHashPasswords is null)
             {
-                _auditService.SecurityAuditUserLoginAttemptFails(user.Id, user.Username, $" => password is null");
+                _auditService.SecurityAuditUserLoginAttemptFails(user.Id, user.Username, $"=> password is null");
                 throw new AuthException("Login => username or password invalid");
             }
 
@@ -89,7 +90,7 @@ namespace LibraryAPI.Services
 
             if (result == PasswordVerificationResult.Failed)
             {
-                _auditService.SecurityAuditUserLoginAttemptFails(user.Id, user.Username, $" => incorrect password");
+                _auditService.SecurityAuditUserLoginAttemptFails(user.Id, user.Username, $"=> incorrect password");
                 throw new AuthException("Login => username or password invalid");
             }
 

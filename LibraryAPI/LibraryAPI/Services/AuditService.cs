@@ -81,17 +81,13 @@ namespace LibraryAPI.Services
             return query.ToList();
         }
 
-        public object AuditDbTable(Guid userId, string dbTables, string tableId, DbOperations operation, string description)
+        public object AuditDbTable(string dbTables, string tableId, DbOperations operation, string description)
         {
-
             DbTables.checkIsCorrect(dbTables);
-
-            // FOR TEST ONLY - TODO::REMOVE it
-            userId = _context.Users.AsNoTracking().Select(x => x.Id).First();
 
             var model = new Audit()
             {
-                UserId = userId,
+                UserId = _headerContextService.GetUserId(),
                 DbTables = dbTables,
                 TableRowId = tableId,
                 Operation = operation,
@@ -108,22 +104,15 @@ namespace LibraryAPI.Services
 
         public object SecurityAudit(Guid? userId, SecurityOperation operation, string description)
         {
-            string by = "";
-
-            try
+            Guid? OperatorUserId = null;
+            string? OperatorUserUsername = null;
+            UserRoles OperatorUserRole = UserRoles.GUEST;
+            
+            if (_headerContextService.IsAuthenticated() == true)
             {
-                CookieUser cookieUser = new CookieUser()
-                {
-                    Id = _headerContextService.GetUserId(),
-                    Username = _headerContextService.GetUserUsername(),
-                    Role = _headerContextService.GetUserRole()
-                };
-
-                by = cookieUser.getUserInfo;
-
-            } catch(Exception ex)
-            {
-                by = "-1/GUEST/-1";
+                OperatorUserId = _headerContextService.GetUserId();
+                OperatorUserUsername = _headerContextService.GetUserUsername();
+                OperatorUserRole = _headerContextService.GetUserRole();
             }
 
             var model = new SecurityAudit()
@@ -132,7 +121,10 @@ namespace LibraryAPI.Services
                 SecurityOperation = operation,
                 LogTime = DateTime.UtcNow,
                 IP = _headerContextService.GetUserRemoteIpAddress(),
-                Description = description + $" by: {by}"
+                Description = description,
+                OperatorUserId = OperatorUserId,
+                OperatorUserUsername = OperatorUserUsername,
+                OperatorUserRole = OperatorUserRole,
             };
 
             _context.SecurityAudit.Add(model);
@@ -147,16 +139,10 @@ namespace LibraryAPI.Services
             return SecurityAudit(userId, SecurityOperation.LOGIN_ATTEMPT_SUCCESS, desc);
         }
 
-        public object SecurityAuditUserLoginAttemptFails(Guid userId, string username, string desc = "")
+        public object SecurityAuditUserLoginAttemptFails(Guid? userId, string username, string desc = "")
         {
             desc = desc == "" ? $"{username}: Login fails" : $"{username}: Login fails {desc}";
             return SecurityAudit(userId, SecurityOperation.LOGIN_ATTEMPT_FAILS, desc);
-        }
-
-        public object SecurityAuditUserLoginAttemptFails(string username, string desc = "")
-        {
-            desc = desc == "" ? $"{username}: Login fails" : $"{username}: Login fails {desc}";
-            return SecurityAudit(null, SecurityOperation.LOGIN_ATTEMPT_FAILS, desc);
         }
 
         public object SecurityAuditUserLogoutAttemptSuccess(Guid userId, string username, string desc = "")

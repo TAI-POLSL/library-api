@@ -5,5 +5,6 @@
         ADMIN,
         EMPLOYEE,
         CLIENT,
+        GUEST
     }
 }
