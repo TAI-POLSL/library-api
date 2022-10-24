@@ -5,7 +5,7 @@ using LibraryAPI.Interfaces;
 namespace LibraryAPI.Controllers
 {
     [ApiController]
-    [Route("/api/1.0.0/audit/security/")]
+    [Route("/api/1.0.0/library/logs/")]
     public class AuditController : ControllerBase
     {
         private readonly IAuditService _service;

@@ -6,7 +6,7 @@ using LibraryAPI.Models.Dto;
 namespace LibraryAPI.Controllers
 {
     [ApiController]
-    [Route("/api/1.0.0/library/manage/")]
+    [Route("/api/1.0.0/library/")]
     public class LibraryBooksController : ControllerBase
     {
         private readonly ILibraryBooksService _service;
@@ -44,7 +44,7 @@ namespace LibraryAPI.Controllers
             return Ok(obj);
         }
 
-        [HttpPatch("book/{id}")]
+        [HttpPatch("book/{id}/quantity")]
         public ActionResult UpdateTotalQuantity([FromRoute] int id, [FromBody]  int quantity)
         {
             var obj = _service.UpdateTotalQuantity(id, quantity);

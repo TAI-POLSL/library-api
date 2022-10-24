@@ -7,7 +7,7 @@ using LibraryAPI.Enums;
 namespace LibraryAPI.Controllers
 {
     [ApiController]
-    [Route("/api/1.0.0/auth/")]
+    [Route("/api/1.0.0/library/auth/")]
     public class AuthController : ControllerBase
     {
 

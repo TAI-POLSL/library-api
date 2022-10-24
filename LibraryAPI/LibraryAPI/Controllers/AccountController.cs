@@ -6,7 +6,7 @@ using LibraryAPI.Models.Dto;
 namespace LibraryAPI.Controllers
 {
     [ApiController]
-    [Route("/api/1.0.0/account/")]
+    [Route("/api/1.0.0/library/")]
     public class AccountController : ControllerBase
     {
         private readonly IAccountService _service;
@@ -16,28 +16,29 @@ namespace LibraryAPI.Controllers
             _service = service;
         }
 
-        [HttpGet()]
+        [HttpGet("accounts")]
+        [Authorize(Roles = "ADMIN")]
         public object Get() 
         { 
             var obj = _service.Get();
             return Ok(obj);
         }
 
-        [HttpGet("{userId}")]
+        [HttpGet("account/{userId}")]
         public object GetById([FromRoute] Guid userId)
         {
             var obj = _service.Get(userId);
             return Ok(obj);
         }
 
-        [HttpGet("{userId}/audit")]
+        [HttpGet("account/{userId}/audit")]
         public object GetAuditByUserId([FromRoute] Guid userId)
         {
             var obj = _service.GetAuditByUserId(userId);
             return Ok(obj);
         }
 
-        [HttpPost]
+        [HttpPost("account")]
         public async Task<ActionResult> Register([FromBody] RegisterDto dto)
         {
             
@@ -45,21 +46,21 @@ namespace LibraryAPI.Controllers
             return Ok(obj);
         }
 
-        [HttpPatch("{userId}/lock")]
+        [HttpPatch("account/{userId}/lock")]
         public ActionResult Lock(Guid userId)
         {
             var obj = _service.Lock(userId);
             return Ok(obj);
         }
 
-        [HttpPatch("{userId}/password")]
+        [HttpPatch("account/{userId}/password")]
         public async Task<ActionResult> ChangePassword([FromBody] ChangePasswordDto dto, [FromRoute] Guid userId)
         {
             var obj = await _service.ChangePassword(dto, userId);
             return Ok(obj);
         }
 
-        [HttpDelete("{userId}/close")]
+        [HttpDelete("account/{userId}/close")]
         public ActionResult Close(Guid userId)
         {
             var obj = _service.Close(userId);

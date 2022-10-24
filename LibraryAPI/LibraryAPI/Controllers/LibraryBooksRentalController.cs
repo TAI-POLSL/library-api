@@ -6,7 +6,7 @@ using LibraryAPI.Models.Dto;
 namespace LibraryAPI.Controllers
 {
     [ApiController]
-    [Route("/api/1.0.0/library/manage/")]
+    [Route("/api/1.0.0/library/")]
     public class LibraryBooksRentalController : ControllerBase
     {
         private readonly ILibraryBooksRentalService _service;
@@ -23,7 +23,7 @@ namespace LibraryAPI.Controllers
             return Ok(obj);
         }
 
-        [HttpGet("rental/{id}/details")]
+        [HttpGet("rental/{id}/info")]
         public ActionResult GetById([FromRoute] int id)
         {
             var obj = _service.Get(id);

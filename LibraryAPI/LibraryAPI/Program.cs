@@ -1,9 +1,12 @@
 using LibraryAPI;
 using LibraryAPI.Interfaces;
+using LibraryAPI.Middlewares;
 using LibraryAPI.Models;
 using LibraryAPI.Models.Entities;
 using LibraryAPI.Services;
 using Microsoft.AspNetCore.Authentication.Cookies;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.CookiePolicy;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 
@@ -13,7 +16,9 @@ var DbConnectionString = MyConfig.GetValue<string>("ConnectionStrings:DefaultCon
 
 var cookiePolicyOptions = new CookiePolicyOptions
 {
-    MinimumSameSitePolicy = SameSiteMode.Strict,
+    MinimumSameSitePolicy = SameSiteMode.None,
+    HttpOnly = HttpOnlyPolicy.Always,
+    Secure = CookieSecurePolicy.Always,
 };
 
 // Header Context
@@ -35,6 +40,8 @@ builder.Services.AddScoped<ILibraryBooksService, LibraryBooksService>();
 
 builder.Services.AddScoped<CustomCookieAuthenticationEvents>();
 
+builder.Services.AddScoped<ErrorHandlingMiddleware>();
+
 // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
@@ -47,23 +54,30 @@ builder.Services.AddDbContext<AppDbContext>(options =>
     });
 });
 
-builder.Services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationScheme)
-    .AddCookie(options =>
-    {
-        options.EventsType = typeof(CustomCookieAuthenticationEvents);
-    });
+builder.Services.AddAuthentication((cfg =>
+{
+    cfg.DefaultScheme = CookieAuthenticationDefaults.AuthenticationScheme;
+    cfg.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
+}))
+.AddCookie(options =>
+{
+    options.EventsType = typeof(CustomCookieAuthenticationEvents);
+})
+.AddJwtBearer();
 
 var app = builder.Build();
 
 // Configure the HTTP request pipeline.
-//if (app.Environment.IsDevelopment())
-//{
-//    app.UseSwagger();
-//    app.UseSwaggerUI();
-//}
-
-app.UseSwagger();
-app.UseSwaggerUI();
+if (app.Environment.IsDevelopment())
+{
+    app.UseSwagger();
+    app.UseSwaggerUI();
+} else
+{
+    // REMOVE IT IN PRODUCTION MODE !!!
+    app.UseSwagger();
+    app.UseSwaggerUI();
+}
 
 app.UseHttpsRedirection();
 
@@ -71,6 +85,8 @@ app.UseCookiePolicy(cookiePolicyOptions);
 
 app.UseAuthentication();
 app.UseAuthorization();
+
+app.UseMiddleware<ErrorHandlingMiddleware>();
 
 app.MapControllers();
 

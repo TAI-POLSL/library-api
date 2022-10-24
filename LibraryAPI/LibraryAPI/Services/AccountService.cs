@@ -123,7 +123,7 @@ namespace LibraryAPI.Services
             };
 
             var strategy = _context.Database.CreateExecutionStrategy();
-            await strategy.ExecuteAsync(async ()  =>
+            await strategy.ExecuteAsync(async ()  => 
             {
                 using (var transaction = _context.Database.BeginTransaction())
                 {
