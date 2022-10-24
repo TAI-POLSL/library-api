@@ -159,25 +159,61 @@ namespace LibraryAPI.Services
             return 200;
         }
 
-        public object Close(Guid userId)
+        public object CloseStrategy(Guid? userId)
         {
+            userId = userId != null ? userId : _headerContextService.GetUserId();
+
             var user = _context.Users
-                .Where(u => u.Id == userId)
-                .FirstOrDefault();
+              .Where(u => u.Id == userId && u.IsEnabled == true)
+              .FirstOrDefault();
 
             if (user == null)
             {
-                _auditService.SecurityAudit(userId, Enums.SecurityOperation.USER_ACCOUNT_DELETED, $"no user account");
-                throw new NotFoundException("Close => User not found");
+                _auditService.SecurityAudit(null, Enums.SecurityOperation.USER_ACCOUNT_DELETED, $"no user account or allready closed");
+                throw new NotFoundException("Close => User not exits or allready closed");
             }
 
+            // One ADMIN account is nessesery
+            // EMPLOYEE can only close CLIENTS accounts
+
+            switch(_headerContextService.GetUserRole())
+            {
+                case UserRoles.ADMIN:
+
+                    var count = _context.Users
+                      .Where(u => u.Role == UserRoles.ADMIN)
+                      .ToList()
+                      .Count;
+
+                    if(count == 1 && user.Role == UserRoles.ADMIN)
+                    {
+                        throw new BadHttpRequestException("Close => not enought admin's accounts");
+                    }
+
+                    break;
+                case UserRoles.EMPLOYEE:
+                    if (user.Role != UserRoles.CLIENT)
+                    {
+                        throw new ForbiddenException("Close => role");
+                    }
+                    break;
+                default:
+                    throw new ForbiddenException("Close => role");
+
+            }
+
+            return CloseAccountProcedure(ref user);
+        }
+
+        private object CloseAccountProcedure(ref User user)
+        { 
             var old = user.IsEnabled;
             user.IsEnabled = false;
 
-            _context.SaveChanges();
-
             _auditService.AuditDbTable(DbTables.USERS, user.Id.ToString(), DbOperations.UPDATE, $"IsEnable from {old} to {user.IsEnabled}");
-            _auditService.SecurityAudit(userId, Enums.SecurityOperation.USER_ACCOUNT_DELETED, $"{user.Username}: account close successfull");
+            _auditService.SecurityAudit(user.Id, Enums.SecurityOperation.USER_ACCOUNT_DELETED, $"{user.Username}: account close successfull");
+
+            _context.SaveChanges();
 
             return 200;
         }

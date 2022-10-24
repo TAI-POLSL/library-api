@@ -73,14 +73,21 @@ namespace LibraryAPI.Controllers
         [Authorize(Roles = "ADMIN, EMPLOYEE")]
         public ActionResult Close(Guid userId)
         {
-            // TODO EMPLOYEE can only close CLIENTS accounts
-            // TODO One ADMIN account is nessesery
-            var obj = _service.Close(userId);
+            // EMPLOYEE can only close CLIENTS accounts
+            // One ADMIN account is nessesery
+            var obj = _service.CloseStrategy(userId);
+            return Ok(obj);
+        }
+
+        [HttpDelete("account/close")]
+        [Authorize(Roles = "ADMIN, EMPLOYEE, CLIENTS")]
+        public ActionResult CloseContextAccount()
+        {
+            var obj = _service.CloseStrategy(null);
             return Ok(obj);
         }
 
         // TODO Seed account
-
         [AllowAnonymous]
         [HttpPost("account/generate/admin")]
         public async Task<ActionResult> GenerateAdmin()
