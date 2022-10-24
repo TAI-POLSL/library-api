@@ -18,7 +18,6 @@ namespace LibraryAPI.Services
         private readonly IConfiguration _configuration;
         private readonly IPasswordHasher<User> _passwordHasher;
         private readonly IAuditService _auditService;
-        protected readonly IHttpContextAccessor _httpContextAccessor;
         private readonly IHeaderContextService _headerContextService;
 
         public AuthService(
@@ -27,7 +26,6 @@ namespace LibraryAPI.Services
             IConfiguration configuration,
             IPasswordHasher<User> passwordHasher,
             IAuditService auditService,
-            IHttpContextAccessor httpContextAccessor,
             IHeaderContextService headerContextService
             )
         {
@@ -36,18 +34,15 @@ namespace LibraryAPI.Services
             _configuration = configuration;
             _passwordHasher = passwordHasher;
             _auditService = auditService;
-            _httpContextAccessor = httpContextAccessor;
             _headerContextService = headerContextService;
         }
 
 
         public async Task<object> LoginAsync(LoginDto dto)
         {
-            var ss = _httpContextAccessor.HttpContext?.Request.Cookies["SESSION"];
-
-            if (ss != null)
+            if (_headerContextService.IsAuthenticated() == true)
             {
-                throw new AuthException("Login => session cookie exists");
+                throw new BadHttpRequestException("Login => session cookie exists");
             }
 
             var user = _context.Users
@@ -103,7 +98,7 @@ namespace LibraryAPI.Services
             var session = new Session()
             {
                 UserId = user.Id,
-                IpAddress = _headerContextService.RemoteIpAddress(),
+                IpAddress = _headerContextService.GetUserRemoteIpAddress(),
             };
 
             _context.Sessions.Add(session);
@@ -119,7 +114,7 @@ namespace LibraryAPI.Services
                 new Claim(ClaimTypes.Role, user.Role.ToString()),
             };
 
-            await _httpContextAccessor.HttpContext!.SignInAsync(
+            await _headerContextService.GetHttpContext().SignInAsync(
                 CookieAuthenticationDefaults.AuthenticationScheme,
                 new ClaimsPrincipal(new ClaimsIdentity(claims, CookieAuthenticationDefaults.AuthenticationScheme)),
                 new AuthenticationProperties
@@ -137,30 +132,21 @@ namespace LibraryAPI.Services
 
         public async Task<object> Logout()
         {
-            if (_httpContextAccessor.HttpContext == null) {
-                await _httpContextAccessor.HttpContext!.SignOutAsync(CookieAuthenticationDefaults.AuthenticationScheme);
+            if (_headerContextService.IsAuthenticated() == false)
+            {
                 return "";
             }
 
-            var sessionId = _httpContextAccessor.HttpContext.User.Claims.FirstOrDefault(x => x.Type == "SessionID")?.Value!;
+            Guid sessionId = _headerContextService.GetUserSessionId();
+            Guid userId = _headerContextService.GetUserId();
+            var username = _headerContextService.GetUserUsername();
 
-            if (sessionId == null) {
-                await _httpContextAccessor.HttpContext!.SignOutAsync(CookieAuthenticationDefaults.AuthenticationScheme);
-                return "";
-            }
-
-            var userId = _httpContextAccessor.HttpContext.User.Claims.FirstOrDefault(x => x.Type == ClaimTypes.NameIdentifier)?.Value!;
-            var username = _httpContextAccessor.HttpContext.User.Claims.FirstOrDefault(x => x.Type == ClaimTypes.Name)?.Value!;
-
-            var guidSessionId = new Guid(sessionId);
-            var guidUserGuidId = new Guid(userId);
-
-            var session = _context.Sessions.Where(x => x.Id == guidSessionId).First();
+            var session = _context.Sessions.Where(x => x.Id == sessionId).First();
             _context.Sessions.Remove(session);
 
-            _auditService.SecurityAuditUserLogoutAttemptSuccess(guidUserGuidId, username);
+            _auditService.SecurityAuditUserLogoutAttemptSuccess(userId, username);
 
-            await _httpContextAccessor.HttpContext!.SignOutAsync(CookieAuthenticationDefaults.AuthenticationScheme);
+            await _headerContextService.GetHttpContext().SignOutAsync(CookieAuthenticationDefaults.AuthenticationScheme);
             _context.SaveChanges();
 
             return "";

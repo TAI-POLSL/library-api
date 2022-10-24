@@ -119,7 +119,7 @@ namespace LibraryAPI.Services
             {
                 User = user,
                 Password = _passwordHasher.HashPassword(user, dto.NewPassword),
-                IP = _headerContextService.RemoteIpAddress(),
+                IP = _headerContextService.GetUserRemoteIpAddress(),
             };
 
             var strategy = _context.Database.CreateExecutionStrategy();
@@ -212,6 +212,20 @@ namespace LibraryAPI.Services
                 throw new RegisterException("Register => Passwords are different");
             }
 
+            CookieUser cookieUser = new CookieUser()
+            {
+                Id = _headerContextService.GetUserId(),
+                Username = _headerContextService.GetUserUsername(),
+                Role = _headerContextService.GetUserRole()
+            };
+
+            // EMPLOYEE can only register CLIENTS accounts
+
+            if(cookieUser.Role == UserRoles.EMPLOYEE && dto.Roles != UserRoles.CLIENT)
+            {
+                throw new RegisterException("Register => forbidden");
+            } 
+
             var ex = _context.Users
                 .AsNoTracking()
                 .Include(u => u.Person)
@@ -257,7 +271,7 @@ namespace LibraryAPI.Services
                         {
                             User = user,
                             Password = _passwordHasher.HashPassword(user, dto.Password),
-                            IP = _headerContextService.RemoteIpAddress(),
+                            IP = _headerContextService.GetUserRemoteIpAddress(),
                         };
 
                         _context.UserCredentials.Add(credential);

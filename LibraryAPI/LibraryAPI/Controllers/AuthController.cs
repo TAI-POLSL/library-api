@@ -22,7 +22,6 @@ namespace LibraryAPI.Controllers
             _service = service;
         }
 
-        [AllowAnonymous]
         [HttpPost("login")]
         public async Task<ActionResult> Login([FromBody] LoginDto dto)
         {

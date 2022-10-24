@@ -96,7 +96,7 @@ namespace LibraryAPI.Services
                 TableRowId = tableId,
                 Operation = operation,
                 Time = DateTime.UtcNow,
-                IP = _headerContextService.RemoteIpAddress(),
+                IP = _headerContextService.GetUserRemoteIpAddress(),
                 Description = description
             };
 
@@ -108,14 +108,31 @@ namespace LibraryAPI.Services
 
         public object SecurityAudit(Guid? userId, SecurityOperation operation, string description)
         {
+            string by = "";
+
+            try
+            {
+                CookieUser cookieUser = new CookieUser()
+                {
+                    Id = _headerContextService.GetUserId(),
+                    Username = _headerContextService.GetUserUsername(),
+                    Role = _headerContextService.GetUserRole()
+                };
+
+                by = cookieUser.getUserInfo;
+
+            } catch(Exception ex)
+            {
+                by = "-1/GUEST/-1";
+            }
 
             var model = new SecurityAudit()
             {
                 UserId = userId,
                 SecurityOperation = operation,
                 LogTime = DateTime.UtcNow,
-                IP = _headerContextService.RemoteIpAddress(),
-                Description = description + $" by: {null}"
+                IP = _headerContextService.GetUserRemoteIpAddress(),
+                Description = description + $" by: {by}"
             };
 
             _context.SecurityAudit.Add(model);
@@ -126,27 +143,32 @@ namespace LibraryAPI.Services
 
         public object SecurityAuditUserLoginAttemptSuccess(Guid userId, string username, string desc = "")
         {
-            return SecurityAudit(userId, SecurityOperation.LOGIN_ATTEMPT_SUCCESS, $"{username}: Success login {desc}");
+            desc = desc == "" ? $"{username}: Success login" : $"{username}: Success login {desc}";
+            return SecurityAudit(userId, SecurityOperation.LOGIN_ATTEMPT_SUCCESS, desc);
         }
 
         public object SecurityAuditUserLoginAttemptFails(Guid userId, string username, string desc = "")
         {
-            return SecurityAudit(userId, SecurityOperation.LOGIN_ATTEMPT_FAILS, $"{username}: Login fails {desc}");
+            desc = desc == "" ? $"{username}: Login fails" : $"{username}: Login fails {desc}";
+            return SecurityAudit(userId, SecurityOperation.LOGIN_ATTEMPT_FAILS, desc);
         }
 
         public object SecurityAuditUserLoginAttemptFails(string username, string desc = "")
         {
-            return SecurityAudit(null, SecurityOperation.LOGIN_ATTEMPT_FAILS, $"{username}: Login fails {desc}");
+            desc = desc == "" ? $"{username}: Login fails" : $"{username}: Login fails {desc}";
+            return SecurityAudit(null, SecurityOperation.LOGIN_ATTEMPT_FAILS, desc);
         }
 
         public object SecurityAuditUserLogoutAttemptSuccess(Guid userId, string username, string desc = "")
         {
-            return SecurityAudit(userId, SecurityOperation.LOGOUT_ATTEMPT_SUCCESS, $"{username}: Success logout {desc}");
+            desc = desc == "" ? $"{username}: Success logout" : $"{username}: Success logout {desc}";
+            return SecurityAudit(userId, SecurityOperation.LOGOUT_ATTEMPT_SUCCESS, desc);
         }
 
         public object SecurityAuditUserLogoutAttemptFails(Guid userId, string username, string desc = "")
         {
-            return SecurityAudit(userId, SecurityOperation.LOGOUT_ATTEMPT_FAILS, $"{username}: Logout fails {desc}");
+            desc = desc == "" ? $"{username}: Logout fails" : $"{username}: Logout fails {desc}";
+            return SecurityAudit(userId, SecurityOperation.LOGOUT_ATTEMPT_FAILS, desc);
         }
     }
 }

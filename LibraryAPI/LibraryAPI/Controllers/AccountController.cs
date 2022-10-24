@@ -46,7 +46,7 @@ namespace LibraryAPI.Controllers
         [Authorize(Roles = "ADMIN, EMPLOYEE")]
         public async Task<ActionResult> Register([FromBody] RegisterDto dto)
         {
-            // TODO EMPLOYEE can only register CLIENTS accounts
+            // EMPLOYEE can only register CLIENTS accounts
             var obj = await _service.Register(dto);
             return Ok(obj);
         }
