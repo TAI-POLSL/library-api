@@ -17,6 +17,7 @@ namespace LibraryAPI.Controllers
         }
 
         [HttpGet]
+        [Authorize(Roles = "ADMIN")]
         public ActionResult GetSecurity()
         {
             var obj = _service.GetSecurity();
@@ -24,15 +25,19 @@ namespace LibraryAPI.Controllers
         }
 
         [HttpGet("{userId}")]
+        [Authorize(Roles = "ADMIN, EMPLOYEE, CLIENT")]
         public ActionResult GetSecurityByUserId([FromRoute] Guid userId)
         {
+            // TODO EMPLOYEE, CLIENT get only own
             var obj = _service.GetSecurityByUserId(userId);
             return Ok(obj);
         }
 
         [HttpGet("{userId}/sessions")]
+        [Authorize(Roles = "ADMIN, EMPLOYEE, CLIENT")]
         public ActionResult GetUserSessions([FromRoute] Guid userId)
         {
+            // TODO EMPLOYEE, CLIENT get only own
             var obj = _service.GetUserSessions(userId);
             return Ok(obj);
         }

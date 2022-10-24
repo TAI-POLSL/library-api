@@ -17,20 +17,25 @@ namespace LibraryAPI.Controllers
         }
 
         [HttpGet("rentals")]
+        [Authorize(Roles = "ADMIN, EMPLOYEE, CLIENT")]
         public ActionResult Get()
         {
+            // TODO CLIENT can get only own rentals
             var obj = _service.Get();
             return Ok(obj);
         }
 
         [HttpGet("rental/{id}/info")]
+        [Authorize(Roles = "ADMIN, EMPLOYEE, CLIENT")]
         public ActionResult GetById([FromRoute] int id)
         {
+            // TODO CLIENT can get only own rental details
             var obj = _service.Get(id);
             return Ok(obj);
         }
 
         [HttpGet("rentals/user/{userId}")]
+        [Authorize(Roles = "ADMIN, EMPLOYEE")]
         public ActionResult GetByUser([FromRoute] Guid userId)
         {
             var obj = _service.Get(null, userId);
@@ -38,13 +43,16 @@ namespace LibraryAPI.Controllers
         }
 
         [HttpPost("rental")]
-        public ActionResult Add([FromBody] BookReservationDto dto)
+        [Authorize(Roles = "ADMIN, EMPLOYEE")]
+        public ActionResult Add([FromBody] BookRentByUserDto dto)
         {
+            // TODO only clients can rents books
             var obj = _service.Add(dto);
             return Ok(obj);
         }
 
         [HttpPut("rental/{id}/cancel")]
+        [Authorize(Roles = "ADMIN, EMPLOYEE")]
         public ActionResult Cancel([FromRoute] int id)
         {
             var obj = _service.Cancel(id);
@@ -52,6 +60,7 @@ namespace LibraryAPI.Controllers
         }
 
         [HttpPatch("rental/{id}/end")]
+        [Authorize(Roles = "ADMIN, EMPLOYEE")]
         public ActionResult End([FromRoute] int id)
         {
             var obj = _service.End(id);

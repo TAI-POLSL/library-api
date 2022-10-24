@@ -2,7 +2,7 @@
 
 namespace LibraryAPI.Models.Dto
 {
-    public class BookReservationDto
+    public class BookRentByUserDto
     {
         public Guid UserId { get; set; }
         public int BookId { get; set; }

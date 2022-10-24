@@ -24,7 +24,7 @@ namespace LibraryAPI.Services
             _auditService = auditService;
         }
 
-        public object Add(BookReservationDto dto)
+        public object Add(BookRentByUserDto dto)
         {
             var user = _context.Users
                 .AsNoTracking()

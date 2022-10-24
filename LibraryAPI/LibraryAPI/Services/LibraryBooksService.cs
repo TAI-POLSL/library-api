@@ -89,12 +89,20 @@ namespace LibraryAPI.Services
         public int Remove(int id)
         {
             var entity = _context.Books
-                 .AsNoTracking()
-                 .FirstOrDefault(x => x.Id == id);
+                .Include(x => x.BookInLibrary)
+                .AsNoTracking()
+                .FirstOrDefault(x => x.Id == id);
 
             if (entity is null)
             {
                 throw new NotFoundException($"Remove => NOT FOUND book (id: {id})");
+            }
+
+            var numOfRented = entity.BookInLibrary.NumOfRented;
+
+            if (numOfRented > 0)
+            {
+                throw new BadHttpRequestException($"Remove => some books (id: {id}) are rented");
             }
 
             _context.Books.Remove(entity);
@@ -108,7 +116,7 @@ namespace LibraryAPI.Services
         public object Update(int id, BookDto dto)
         {
             var entity = _context.Books
-                  .FirstOrDefault(x => x.Id == id);
+                .FirstOrDefault(x => x.Id == id);
 
             if (entity is null)
             {

@@ -17,6 +17,7 @@ namespace LibraryAPI.Controllers
         }
 
         [HttpGet("books")]
+        [Authorize(Roles = "ADMIN, EMPLOYEE, CLIENT")]
         public ActionResult Get()
         {
             var obj = _service.Get();
@@ -24,6 +25,7 @@ namespace LibraryAPI.Controllers
         }
 
         [HttpGet("book/{id}")]
+        [Authorize(Roles = "ADMIN, EMPLOYEE, CLIENT")]
         public ActionResult GetById([FromRoute] int id)
         {
             var obj = _service.Get(id);
@@ -31,6 +33,7 @@ namespace LibraryAPI.Controllers
         }
 
         [HttpPost("book")]
+        [Authorize(Roles = "ADMIN, EMPLOYEE")]
         public ActionResult Add([FromBody] BookDto dto)
         {
             var obj = _service.Add(dto);
@@ -38,6 +41,7 @@ namespace LibraryAPI.Controllers
         }
 
         [HttpPut("book/{id}")]
+        [Authorize(Roles = "ADMIN, EMPLOYEE")]
         public ActionResult Update([FromRoute] int id, [FromBody] BookDto dto)
         {
             var obj = _service.Update(id, dto);
@@ -45,6 +49,7 @@ namespace LibraryAPI.Controllers
         }
 
         [HttpPatch("book/{id}/quantity")]
+        [Authorize(Roles = "ADMIN, EMPLOYEE")]
         public ActionResult UpdateTotalQuantity([FromRoute] int id, [FromBody]  int quantity)
         {
             var obj = _service.UpdateTotalQuantity(id, quantity);
@@ -52,6 +57,7 @@ namespace LibraryAPI.Controllers
         }
 
         [HttpDelete("book/{id}")]
+        [Authorize(Roles = "ADMIN, EMPLOYEE")]
         public ActionResult Remove([FromRoute] int id)
         {
             var obj = _service.Remove(id);
