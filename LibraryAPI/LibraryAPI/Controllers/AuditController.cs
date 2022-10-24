@@ -16,6 +16,14 @@ namespace LibraryAPI.Controllers
             _service = service;
         }
 
+        [HttpGet("db/audits")]
+        [Authorize(Roles = "ADMIN")]
+        public object GetAudits()
+        {
+            var obj = _service.GetAudits();
+            return Ok(obj);
+        }
+
         [HttpGet]
         [Authorize(Roles = "ADMIN")]
         public ActionResult GetSecurity()

@@ -17,10 +17,11 @@ namespace LibraryAPI.Controllers
         }
 
         [HttpGet("accounts")]
-        [Authorize(Roles = "ADMIN")]
+        [Authorize(Roles = "ADMIN, EMPLOYEE")]
         public object Get() 
-        { 
-            var obj = _service.Get();
+        {
+            // EMPLOYEE can get only CLIENTS accounts
+            var obj = _service.GetStrategy();
             return Ok(obj);
         }
 
@@ -28,17 +29,16 @@ namespace LibraryAPI.Controllers
         [Authorize(Roles = "ADMIN, EMPLOYEE")]
         public object GetById([FromRoute] Guid userId)
         {
-            // TODO EMPLOYEE can get only CLIENTS accounts
-            var obj = _service.Get(userId);
+            // EMPLOYEE can get only CLIENTS accounts
+            var obj = _service.GetStrategy(userId);
             return Ok(obj);
         }
 
-        [HttpGet("account/{userId}/audit")]
+        [HttpGet("account/own")]
         [Authorize(Roles = "ADMIN, EMPLOYEE, CLIENT")]
-        public object GetAuditByUserId([FromRoute] Guid userId)
+        public object GetOwn()
         {
-            // TODO EMPLOYEE and CLIENTS can get only own audits
-            var obj = _service.GetAuditByUserId(userId);
+            var obj = _service.GetOwn();
             return Ok(obj);
         }
 
@@ -55,17 +55,25 @@ namespace LibraryAPI.Controllers
         [Authorize(Roles = "ADMIN, EMPLOYEE")]
         public ActionResult Lock(Guid userId)
         {
-            // TODO EMPLOYEE can only lock CLIENTS accounts
-            var obj = _service.Lock(userId);
+            // EMPLOYEE can only lock CLIENTS accounts
+            var obj = _service.ChangeAccountLockStatus(userId, true);
             return Ok(obj);
         }
 
-        [HttpPatch("account/{userId}/password")]
+        [HttpPatch("account/{userId}/unlock")]
         [Authorize(Roles = "ADMIN, EMPLOYEE")]
-        public async Task<ActionResult> ChangePassword([FromBody] ChangePasswordDto dto, [FromRoute] Guid userId)
+        public ActionResult Unlock(Guid userId)
         {
-            // TODO EMPLOYEE can only change CLIENTS accounts
-            var obj = await _service.ChangePassword(dto, userId);
+            // EMPLOYEE can unlock lock CLIENTS accounts
+            var obj = _service.ChangeAccountLockStatus(userId, false);
+            return Ok(obj);
+        }
+
+        [HttpPatch("account/passwd")]
+        [Authorize]
+        public async Task<ActionResult> ChangePassword([FromBody] ChangePasswordDto dto)
+        {
+            var obj = await _service.ChangePassword(dto);
             return Ok(obj);
         }
 

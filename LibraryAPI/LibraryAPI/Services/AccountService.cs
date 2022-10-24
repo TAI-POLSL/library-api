@@ -35,7 +35,7 @@ namespace LibraryAPI.Services
             _auditService = auditService;
         }
 
-        public object Get(Guid? userId = null)
+        public object GetStrategy(Guid? userId = null)
         {
             IQueryable<User> query = _context.Users
                 .AsNoTracking()
@@ -46,6 +46,25 @@ namespace LibraryAPI.Services
                 query = query.Where(x => x.Id == userId);
             }
 
+            // EMPLOYEE can get only CLIENTS accounts
+            var contextUserRole = _headerContextService.GetUserRole();
+
+            switch (_headerContextService.GetUserRole())
+            {
+                case UserRoles.ADMIN:
+                    break;
+                case UserRoles.EMPLOYEE:
+                    query = query.Where(x => x.Role == UserRoles.CLIENT);
+                    break;
+                default:
+                    throw new ForbiddenException("GetStrategy => role");
+            }
+
+            return Get(ref query);
+        }
+
+        private object Get(ref IQueryable<User> query)
+        {
             var fetch = query.Select(x => new
             {
                 x.Id,
@@ -63,39 +82,32 @@ namespace LibraryAPI.Services
             return result;
         }
 
-        public object GetAuditByUserId(Guid userId)
+        public object? GetOwn()
         {
-            var query = _context.Audits
+            return _context.Users
                 .AsNoTracking()
-                .Where(x => x.UserId == userId)
-                .Select(x => new {
-                    x.Id,
-                    x.UserId,
-                    x.Operation,
-                    x.IP,
-                    x.Time,
-                    x.Description,
-                });
-
-            return query.ToList();
+                .Include(x => x.Person)
+                .FirstOrDefault(x => x.Id == _headerContextService.GetUserId());
         }
 
-        public async Task<object> ChangePassword(ChangePasswordDto dto, Guid userId)
+        public async Task<object> ChangePassword(ChangePasswordDto dto)
         {
             if (dto.NewPassword != dto.ConfirmNewPassword)
             {
                 throw new RegisterException("ChangePassword => Passwords not matching");
             }
 
+            var contextUserId = _headerContextService.GetUserId();
+
             var user = _context.Users
                 .Include(x => x.UserCredentials)
                 .Where(x => x.IsEnabled == true && x.IsLocked == false && x.IsConfirmed == true)
-                .FirstOrDefault(x => x.Id == userId);
+                .FirstOrDefault(x => x.Id == contextUserId);
 
             if (user is null)
             {
     
-                _auditService.SecurityAudit(userId, Enums.SecurityOperation.USER_PASSWORD_CHANGE, $"no user account");
+                _auditService.SecurityAudit(contextUserId, Enums.SecurityOperation.USER_PASSWORD_CHANGE, $"no user account");
                 throw new AuthException("ChangePassword => no user account");
             }
 
@@ -107,7 +119,7 @@ namespace LibraryAPI.Services
 
             if (result == PasswordVerificationResult.Failed)
             {
-                _auditService.SecurityAudit(userId, Enums.SecurityOperation.USER_PASSWORD_CHANGE, $"{user.Username}: incorrect current auth password");
+                _auditService.SecurityAudit(contextUserId, Enums.SecurityOperation.USER_PASSWORD_CHANGE, $"{user.Username}: incorrect current auth password");
                 throw new AuthException("ChangePassword => invalid password");
             }
 
@@ -142,14 +154,14 @@ namespace LibraryAPI.Services
                         _auditService.AuditDbTable(DbTables.USERS, user.Id.ToString(), DbOperations.UPDATE, $"CurrUserCredentialId from {oldUserCredentialId} to {credential.Id}");
                         _auditService.AuditDbTable(DbTables.USERS_CREDENTIALS, credential.Id.ToString(), DbOperations.INSERT, "");
 
-                        _auditService.SecurityAudit(userId, Enums.SecurityOperation.USER_PASSWORD_CHANGE, $"{user.Username}: successfull password update");
+                        _auditService.SecurityAudit(contextUserId, Enums.SecurityOperation.USER_PASSWORD_CHANGE, $"{user.Username}: successfull password update");
                         
                         transaction.Commit();
                     }
                     catch (Exception ex)
                     {
                         transaction.Rollback();
-                        _auditService.SecurityAudit(userId, Enums.SecurityOperation.USER_PASSWORD_CHANGE, $"{user.Username}: unsuccessfull password update");
+                        _auditService.SecurityAudit(contextUserId, Enums.SecurityOperation.USER_PASSWORD_CHANGE, $"{user.Username}: unsuccessfull password update");
                         throw new RegisterException(ex.Message);
                     }
 
@@ -218,25 +230,43 @@ namespace LibraryAPI.Services
             return 200;
         }
 
-        public object Lock(Guid userId)
+        public object ChangeAccountLockStatus(Guid userId, bool status = true)
         {
-            var user = _context.Users
+            var targetUser = _context.Users
                 .Where(u => u.Id == userId)
                 .FirstOrDefault();
 
-            if (user == null)
+            if (targetUser == null)
             {
                 _auditService.SecurityAudit(userId, Enums.SecurityOperation.USER_ACCOUNT_LOCK, $"no user account");
-                throw new NotFoundException("Lock => User not found");
+                throw new NotFoundException("ChangeAccountLockStatus => User not found");
             }
 
-            var old = user.IsLocked;
-            user.IsLocked = true;
+            if (targetUser.IsLocked == status)
+            {
+                throw new BadHttpRequestException("ChangeAccountLockStatus => action not nessesery");
+            }
+
+            // EMPLOYEE can only (un)lock CLIENTS accounts
+            if (_headerContextService.GetUserRole() == UserRoles.EMPLOYEE && targetUser.Role != UserRoles.CLIENT)
+            {
+                throw new ForbiddenException("ChangeAccountLockStatus => not enought role");
+            }
+
+            var old = targetUser.IsLocked;
+            targetUser.IsLocked = status;
 
             _context.SaveChanges();
 
-            _auditService.AuditDbTable(DbTables.USERS, user.Id.ToString(), DbOperations.UPDATE, $"IsLocked from {old} to {user.IsLocked}");
-            _auditService.SecurityAudit(userId, Enums.SecurityOperation.USER_ACCOUNT_LOCK, $"{user.Username}: account lock successfull");
+            _auditService.AuditDbTable(DbTables.USERS, targetUser.Id.ToString(), DbOperations.UPDATE, $"IsLocked from {old} to {targetUser.IsLocked}");
+
+            if(status)
+            {
+                _auditService.SecurityAudit(userId, Enums.SecurityOperation.USER_ACCOUNT_LOCK, $"{targetUser.Username}: account lock successfull");
+            } else
+            {
+                _auditService.SecurityAudit(userId, Enums.SecurityOperation.USER_ACCOUNT_LOCK, $"{targetUser.Username}: account unlock successfull");
+            }
 
             return 200;
         }

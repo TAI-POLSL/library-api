@@ -30,7 +30,7 @@ namespace LibraryAPI.Controllers
         }
 
         [HttpDelete("logout")]
-        [Authorize(Roles = "ADMIN, EMPLOYEE, CLIENT")]
+        [Authorize]
         public async Task<ActionResult> Logout()
         {
             await _service.Logout();

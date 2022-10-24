@@ -23,6 +23,24 @@ namespace LibraryAPI.Services
             _headerContextService = headerContextService;
         }
 
+        public object GetAudits()
+        {
+            var query = _context.Audits
+                .AsNoTracking()
+                .Include(x => x.User)
+                .Select(x => new {
+                    x.Id,
+                    x.UserId,
+                    x.User.Username,
+                    x.Operation,
+                    x.IP,
+                    x.Time,
+                    x.Description,
+                });
+
+            return query.ToList();
+        }
+
         public object GetSecurity()
         {
             var query = _context.SecurityAudit

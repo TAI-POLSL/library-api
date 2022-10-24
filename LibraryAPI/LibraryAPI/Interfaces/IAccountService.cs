@@ -4,13 +4,12 @@ namespace LibraryAPI.Interfaces
 {
     public interface IAccountService
     {
-        public object Get(Guid? userId = null);
-        public object GetAuditByUserId(Guid userId);
+        public object GetStrategy(Guid? userId = null);
         public Task<object> Register(RegisterDto dto);
-        public object Lock(Guid userId);
-        public Task<object> ChangePassword(ChangePasswordDto dto, Guid userId);
+        public object ChangeAccountLockStatus(Guid userId, bool status = true);
+        public Task<object> ChangePassword(ChangePasswordDto dto);
         public object CloseStrategy(Guid? userId);
         public Task<object> GenerateAdmin();
-        
+        public object? GetOwn();
     }
 }
