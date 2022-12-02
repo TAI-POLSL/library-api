@@ -320,8 +320,14 @@ namespace LibraryAPI.Services
                 Role = _headerContextService.GetUserRole()
             };
 
+            // Can't create guest
+            if (dto.Roles == UserRoles.GUEST)
+            {
+                throw new BadHttpRequestException("Register => invalid role");
+            }
+
             // EMPLOYEE can only register CLIENTS accounts
-            if(cookieUser.Role == UserRoles.EMPLOYEE && dto.Roles != UserRoles.CLIENT)
+            if (cookieUser.Role == UserRoles.EMPLOYEE && dto.Roles != UserRoles.CLIENT)
             {
                 throw new RegisterException("Register => forbidden");
             } 
