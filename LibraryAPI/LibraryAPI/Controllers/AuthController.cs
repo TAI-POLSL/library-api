@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Authorization;
 using LibraryAPI.Interfaces;
 using LibraryAPI.Models.Dto;
 using LibraryAPI.Enums;
+using LibraryAPI.Services;
 
 namespace LibraryAPI.Controllers
 {
@@ -27,6 +28,10 @@ namespace LibraryAPI.Controllers
         public async Task<ActionResult> Login([FromBody] LoginDto dto)
         {
             object code = await _service.LoginAsync(dto);
+            //Response.Headers.Add("Access-Control-Allow-Credentials", true.ToString());
+            //Response.Headers.Add("Access-Control-Allow-Origin", Request.Headers.Origin);
+            //Response.Headers.Add("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE");
+            //Response.Headers.Add("Access-Control-Allow-Headers", "Content-Type, *");
             return Ok(code);
         }
 

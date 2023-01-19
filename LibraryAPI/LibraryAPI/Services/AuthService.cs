@@ -128,7 +128,7 @@ namespace LibraryAPI.Services
 
             _auditService.SecurityAuditUserLoginAttemptSuccess(user.Id, user.Username);
 
-            return user.Id;
+            return user.Role;
         }
 
         public async Task<object> Logout()

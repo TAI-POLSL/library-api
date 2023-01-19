@@ -9,17 +9,18 @@ using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.CookiePolicy;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.OpenApi.Models;
 
 var builder = WebApplication.CreateBuilder(args);
 var MyConfig = new ConfigurationBuilder().AddJsonFile("appsettings.json").Build();
 var DbConnectionString = MyConfig.GetValue<string>("ConnectionStrings:DefaultConnection");
 
-var cookiePolicyOptions = new CookiePolicyOptions
-{
-    MinimumSameSitePolicy = SameSiteMode.None,
-    HttpOnly = HttpOnlyPolicy.Always,
-    Secure = CookieSecurePolicy.Always,
-};
+//var cookiePolicyOptions = new CookiePolicyOptions
+//{
+//    MinimumSameSitePolicy = SameSiteMode.None,
+//    HttpOnly = HttpOnlyPolicy.Always,
+//    Secure = CookieSecurePolicy.Always,
+//};
 
 // Header Context
 
@@ -56,18 +57,39 @@ builder.Services.AddDbContext<AppDbContext>(options =>
     });
 });
 
-builder.Services.AddAuthentication((cfg =>
-{
-    cfg.DefaultScheme = CookieAuthenticationDefaults.AuthenticationScheme;
-    cfg.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
-}))
-.AddCookie(options =>
-{
-    options.Cookie.SameSite = SameSiteMode.None;
-    options.Cookie.HttpOnly = true;
-    options.EventsType = typeof(CustomCookieAuthenticationEvents);
-})
-.AddJwtBearer();
+builder.Services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationScheme)
+.AddCookie(CookieAuthenticationDefaults.AuthenticationScheme,
+        options =>
+        {
+            options.Cookie.SameSite = SameSiteMode.None;
+            options.Cookie.SecurePolicy = CookieSecurePolicy.Always;
+            options.Cookie.HttpOnly = true;
+            options.Cookie.Name = "SESSION";
+            options.Cookie.IsEssential = true;
+            options.EventsType = typeof(CustomCookieAuthenticationEvents);
+            options.Events.OnRedirectToLogin = context =>
+            {
+                context.Response.Headers["Location"] = context.RedirectUri;
+                context.Response.StatusCode = 401;
+                return Task.CompletedTask;
+            };
+        });
+
+//builder.Services.AddAuthentication((cfg =>
+//{
+//    cfg.DefaultScheme = CookieAuthenticationDefaults.AuthenticationScheme;
+//    cfg.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
+//}))
+//.AddCookie(options =>
+//{
+//    options.Cookie.SameSite = SameSiteMode.None;
+//    options.Cookie.SecurePolicy = CookieSecurePolicy.Always;
+//    options.Cookie.HttpOnly = true;
+//    options.Cookie.Name= "SESSION";
+//    options.Cookie.IsEssential= true;
+//    options.EventsType = typeof(CustomCookieAuthenticationEvents);
+//})
+//.AddJwtBearer();
 
 builder.Services.Configure<CookiePolicyOptions>(options =>
 {
@@ -93,12 +115,15 @@ app.UseHttpsRedirection();
 
 // global cors policy
 app.UseCors(x => x
-    .WithMethods("GET", "POST", "PUT", "PATCH", "DELETE")
+    .WithMethods("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS")
     .AllowAnyHeader()
+    //.WithOrigins("https://blue-wave-0c2789803.2.azurestaticapps.net")
     .SetIsOriginAllowed(origin => true) // allow any origin
-    .AllowCredentials()); // allow credentials
+    .AllowCredentials() // allow credentials
+    .Build()
+);
 
-//app.UseCookiePolicy(cookiePolicyOptions);
+app.UseCookiePolicy();
 
 app.UseAuthentication();
 app.UseAuthorization();
