@@ -63,9 +63,17 @@ builder.Services.AddAuthentication((cfg =>
 }))
 .AddCookie(options =>
 {
+    options.Cookie.SameSite = SameSiteMode.None;
+    options.Cookie.HttpOnly = true;
     options.EventsType = typeof(CustomCookieAuthenticationEvents);
 })
 .AddJwtBearer();
+
+builder.Services.Configure<CookiePolicyOptions>(options =>
+{
+    options.CheckConsentNeeded = context => false;
+    options.MinimumSameSitePolicy = SameSiteMode.None;
+});
 
 var app = builder.Build();
 
@@ -90,7 +98,7 @@ app.UseCors(x => x
     .SetIsOriginAllowed(origin => true) // allow any origin
     .AllowCredentials()); // allow credentials
 
-app.UseCookiePolicy(cookiePolicyOptions);
+//app.UseCookiePolicy(cookiePolicyOptions);
 
 app.UseAuthentication();
 app.UseAuthorization();
