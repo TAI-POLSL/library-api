@@ -42,6 +42,8 @@ builder.Services.AddScoped<CustomCookieAuthenticationEvents>();
 
 builder.Services.AddScoped<ErrorHandlingMiddleware>();
 
+builder.Services.AddCors();
+
 // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
@@ -80,6 +82,13 @@ if (app.Environment.IsDevelopment())
 }
 
 app.UseHttpsRedirection();
+
+// global cors policy
+app.UseCors(x => x
+    .WithMethods("GET", "POST", "PUT", "PATCH", "DELETE")
+    .AllowAnyHeader()
+    .SetIsOriginAllowed(origin => true) // allow any origin
+    .AllowCredentials()); // allow credentials
 
 app.UseCookiePolicy(cookiePolicyOptions);
 
