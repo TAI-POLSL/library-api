@@ -15,13 +15,6 @@ var builder = WebApplication.CreateBuilder(args);
 var MyConfig = new ConfigurationBuilder().AddJsonFile("appsettings.json").Build();
 var DbConnectionString = MyConfig.GetValue<string>("ConnectionStrings:DefaultConnection");
 
-//var cookiePolicyOptions = new CookiePolicyOptions
-//{
-//    MinimumSameSitePolicy = SameSiteMode.None,
-//    HttpOnly = HttpOnlyPolicy.Always,
-//    Secure = CookieSecurePolicy.Always,
-//};
-
 // Header Context
 
 builder.Services.AddScoped<IHeaderContextService, HeaderContextService>();
@@ -75,22 +68,6 @@ builder.Services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationSc
             };
         });
 
-//builder.Services.AddAuthentication((cfg =>
-//{
-//    cfg.DefaultScheme = CookieAuthenticationDefaults.AuthenticationScheme;
-//    cfg.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
-//}))
-//.AddCookie(options =>
-//{
-//    options.Cookie.SameSite = SameSiteMode.None;
-//    options.Cookie.SecurePolicy = CookieSecurePolicy.Always;
-//    options.Cookie.HttpOnly = true;
-//    options.Cookie.Name= "SESSION";
-//    options.Cookie.IsEssential= true;
-//    options.EventsType = typeof(CustomCookieAuthenticationEvents);
-//})
-//.AddJwtBearer();
-
 builder.Services.Configure<CookiePolicyOptions>(options =>
 {
     options.CheckConsentNeeded = context => false;
@@ -117,7 +94,6 @@ app.UseHttpsRedirection();
 app.UseCors(x => x
     .WithMethods("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS")
     .AllowAnyHeader()
-    //.WithOrigins("https://blue-wave-0c2789803.2.azurestaticapps.net")
     .SetIsOriginAllowed(origin => true) // allow any origin
     .AllowCredentials() // allow credentials
     .Build()
