@@ -351,3 +351,4 @@ MigrationBackup/
 
 # Disable migrations
 Migrations/
+LibraryAPI/LibraryAPI/appsettings.json
