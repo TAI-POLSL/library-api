@@ -92,7 +92,7 @@ app.UseHttpsRedirection();
 
 // global cors policy
 app.UseCors(x => x
-    .WithMethods("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS")
+    .WithMethods("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS", "HEAD")
     .AllowAnyHeader()
     .SetIsOriginAllowed(origin => true) // allow any origin
     .AllowCredentials() // allow credentials

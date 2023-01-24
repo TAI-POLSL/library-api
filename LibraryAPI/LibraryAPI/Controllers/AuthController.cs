@@ -4,6 +4,7 @@ using LibraryAPI.Interfaces;
 using LibraryAPI.Models.Dto;
 using LibraryAPI.Enums;
 using LibraryAPI.Services;
+using System.Net;
 
 namespace LibraryAPI.Controllers
 {
@@ -21,6 +22,21 @@ namespace LibraryAPI.Controllers
         ) {
             _appBaseUrl = configuration.GetValue<string>("AppUrl");
             _service = service;
+        }
+
+        [HttpHead("session")]
+        public async Task<ActionResult> Session()
+        {
+            try
+            {
+                if (HttpContext!.User!.Identity!.IsAuthenticated)
+                    return Ok();
+
+                return NoContent();
+            } catch (Exception ex)
+            {
+                return NoContent();
+            }
         }
 
         [HttpPost("login")]
