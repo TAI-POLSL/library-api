@@ -237,9 +237,19 @@ namespace LibraryAPI.Services
         { 
             var old = user.IsEnabled;
             user.IsEnabled = false;
+            var userId = user.Id;
 
             _auditService.AuditDbTable(DbTables.USERS, user.Id.ToString(), DbOperations.UPDATE, $"IsEnable from {old} to {user.IsEnabled}");
             _auditService.SecurityAudit(user.Id, Enums.SecurityOperation.USER_ACCOUNT_DELETED, $"{user.Username}: account close successfull");
+
+            List<Session> sessions = _context.Sessions
+              .Where(x => x.UserId == userId)
+              .ToList();
+
+            if (sessions != null)
+            {
+                _context.Sessions.RemoveRange(sessions);
+            }
 
             _context.SaveChanges();
 
