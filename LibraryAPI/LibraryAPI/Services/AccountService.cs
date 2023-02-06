@@ -65,6 +65,8 @@ namespace LibraryAPI.Services
 
         private object Get(ref IQueryable<User> query)
         {
+            Guid userId = _headerContextService.GetUserId();
+
             var fetch = query.Select(x => new
             {
                 x.Id,
@@ -74,8 +76,10 @@ namespace LibraryAPI.Services
                 x.Person.FullName,
                 x.Person.Email,
                 x.Person.Address,
-                x.Person.Gender
-            });
+                x.Person.Gender,
+                x.IsEnabled,
+                x.IsLocked,
+            }).Where(x => x.Id != userId);
 
             var result = fetch.ToList();
 

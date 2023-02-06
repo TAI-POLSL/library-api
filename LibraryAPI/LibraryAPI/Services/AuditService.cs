@@ -36,6 +36,8 @@ namespace LibraryAPI.Services
                     x.IP,
                     x.Time,
                     x.Description,
+                    x.TableRowId,
+                    x.DbTables
                 });
 
             return query.ToList();
@@ -52,7 +54,9 @@ namespace LibraryAPI.Services
                     x.User.Username,
                     x.IP,
                     x.LogTime,
-                    x.Description
+                    x.Description,
+                    x.OperatorUserRole,
+                    x.OperatorUserUsername
                 });
 
             return query.ToList();
@@ -71,7 +75,9 @@ namespace LibraryAPI.Services
                     x.IP,
                     x.LogTime,
                     x.SecurityOperation,
-                    x.Description
+                    x.Description,
+                    x.OperatorUserRole,
+                    x.OperatorUserUsername
                 });
 
             return query.ToList();
@@ -79,21 +85,15 @@ namespace LibraryAPI.Services
 
         public object GetUserSessions(Guid userId)
         {
-            var query = _context.SecurityAudit
+            var query = _context.Sessions
                 .AsNoTracking()
                 .Include(x => x.User)
-                .Where(x => x.UserId == userId && (
-                    x.SecurityOperation == Enums.SecurityOperation.LOGIN_ATTEMPT_SUCCESS
-                    || x.SecurityOperation == Enums.SecurityOperation.LOGIN_ATTEMPT_FAILS
-                    || x.SecurityOperation == Enums.SecurityOperation.LOGOUT_ATTEMPT_SUCCESS
-                    || x.SecurityOperation == Enums.SecurityOperation.LOGOUT_ATTEMPT_FAILS
-                    ))
+                .Where(x => x.UserId == userId)
                 .Select(x => new {
                     x.Id,
-                    x.IP,
-                    x.LogTime,
-                    x.SecurityOperation,
-                    x.Description
+                    x.UserId,
+                    x.IpAddress,
+                    x.StartTime,
                 });
 
             return query.ToList();
