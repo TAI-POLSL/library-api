@@ -53,6 +53,7 @@ namespace LibraryAPI.Services
                     x.UserId,
                     x.User.Username,
                     x.IP,
+                    x.SecurityOperation,
                     x.LogTime,
                     x.Description,
                     x.OperatorUserRole,
